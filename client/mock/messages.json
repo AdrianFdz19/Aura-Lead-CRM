@@ -1,0 +1,48 @@
+// Recibir un mensaje
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "1322149850053545",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15551797781",
+              "phone_number_id": "1218266898027384"
+            },
+            "contacts": [
+              {
+                "wa_id": "522283212144",
+                "profile": {
+                  "name": "Prueba Postman"
+                }
+              }
+            ],
+            "messages": [
+              {
+                "from": "522283212144",
+                "id": "wamid.simulado.123",
+                "timestamp": "1758254144",
+                "text": {
+                  "body": "Hola, este es un mensaje simulado desde Postman"
+                },
+                "type": "text"
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
+// Enviar un mensaje
+{
+                messaging_product: 'whatsapp',
+                to: conversation.lead.waId,
+                type: 'text',
+                text: { body: messageText
+  }
+}
