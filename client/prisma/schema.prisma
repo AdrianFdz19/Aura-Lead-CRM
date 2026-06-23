@@ -21,8 +21,24 @@ model Tenant {
   tasks          Task[]
   users          User[]
   whatsappConfig WhatsappConfig?
+  properties     Property[]
 
   @@map("tenants")
+}
+
+model Property {
+  id          String                       @id @default(uuid())
+  title       String
+  description String
+  price       Decimal
+  location    String
+  // Este campo almacenará el vector de la descripción para la IA
+  embedding   Unsupported("vector(1536)")?
+
+  tenantId  String   @map("tenant_id") @db.Uuid
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
 }
 
 model User {

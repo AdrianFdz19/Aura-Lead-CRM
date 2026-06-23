@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Pusher from 'pusher-js';
 
 interface Message {
     id: string;
@@ -26,16 +27,41 @@ export default function ChatPage() {
     const [inputText, setInputText] = useState('');
 
     const handleSendMessage = async (text: string) => {
-        if (!selectedChat) return; // Soluciona la flag roja de selectedChat.id
+        if (!selectedChat) return;
 
-        const res = await fetch(`/api/conversations/${selectedChat.id}/messages`, {
-            method: 'POST',
-            body: JSON.stringify({ messageText: text }),
-        });
+        // 1. Crear el objeto de mensaje "optimista" (temporal)
+        // Usamos un ID temporal (ej. timestamp) para que React no se queje
+        const tempMessage: Message = {
+            id: Date.now().toString(),
+            messageText: text,
+            senderType: 'AGENT', // O el tipo correcto para ti
+        };
 
-        const newMessage = await res.json();
-        // Agrega el nuevo mensaje a tu estado local para verlo al instante
-        setMessages([...messages, newMessage]);
+        // 2. Actualizar UI al instante
+        setMessages((prev) => [...prev, tempMessage]);
+        setInputText(''); // Limpiar el input inmediatamente
+
+        try {
+            // 3. Ejecutar la petición real en segundo plano
+            const res = await fetch(`/api/conversations/${selectedChat.id}/messages`, {
+                method: 'POST',
+                body: JSON.stringify({ messageText: text }),
+            });
+
+            if (!res.ok) throw new Error('Error al enviar');
+
+            const savedMessage = await res.json();
+
+            // 4. Reemplazar el mensaje temporal por el real (con el ID de la BD)
+            setMessages((prev) =>
+                prev.map((msg) => (msg.id === tempMessage.id ? savedMessage : msg))
+            );
+        } catch (error) {
+            console.error('Error:', error);
+            // Opcional: remover el mensaje o mostrar un aviso de error
+            setMessages((prev) => prev.filter((msg) => msg.id !== tempMessage.id));
+            alert('No se pudo enviar el mensaje. Intenta de nuevo.');
+        }
     };
 
     // 1. Cargar lista de chats al iniciar
@@ -44,6 +70,38 @@ export default function ChatPage() {
             .then(res => res.json())
             .then(data => setConversations(data));
     }, []);
+
+    useEffect(() => {
+        // Si no hay chat seleccionado, no hacemos nada
+        if (!selectedChat) return;
+
+        // Inicializar Pusher
+        const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+            cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+        });
+
+        // Suscribirse al canal específico de esta conversación
+        const channel = pusher.subscribe(`chat-${selectedChat.id}`);
+
+        // Escuchar el evento que definimos en el backend
+        channel.bind("new-message", (newMessage: Message) => {
+            setMessages((prev) => [...prev, newMessage]);
+
+            // Auto-scroll al final del chat
+            setTimeout(() => {
+                const chatContainer = document.querySelector('.overflow-y-auto.p-4');
+                if (chatContainer) {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                }
+            }, 100);
+        });
+
+        // Cleanup: Se ejecuta cuando cambia selectedChat o el componente se desmonta
+        return () => {
+            pusher.unsubscribe(`chat-${selectedChat.id}`);
+            pusher.disconnect();
+        };
+    }, [selectedChat?.id]); // ESTA ES LA CLAVE: se vuelve a ejecutar al cambiar de chat
 
     // 2. Cargar mensajes cuando se selecciona un chat
     const handleSelectChat = async (conv: Conversation) => {
@@ -88,14 +146,14 @@ export default function ChatPage() {
                         </div>
 
                         {/* Input de mensaje */}
-                        <form 
+                        <form
                             onSubmit={(e) => {
                                 e.preventDefault();
                                 if (inputText.trim()) {
                                     handleSendMessage(inputText);
                                     setInputText('');
                                 }
-                            }} 
+                            }}
                             className="p-4 bg-white border-t flex gap-2"
                         >
                             <input
