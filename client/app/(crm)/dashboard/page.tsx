@@ -1,3 +1,4 @@
+import PropertyForm from "@/app/components/PropertyForm";
 
 export default async function Dashboard() {
 
@@ -5,6 +6,8 @@ export default async function Dashboard() {
     <div className="p-8">
       <h1 className="text-2xl font-bold">Bienvenido al CRM Inmobiliario</h1>
       <p className="mt-2 text-gray-600">Tu suscripción está activa.</p>
+
+      <PropertyForm />
     </div>
   );
 }

@@ -98,6 +98,8 @@ export async function POST(
             }
         });
 
+        // 5.- Aqui es donde se llama a pusher con su trigger enviando el mensaje recien enviado en tiempo real al frontend ?
+
         return NextResponse.json(newMessage);
     } catch (error) {
         console.error("Error en POST:", error);

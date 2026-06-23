@@ -1,5 +1,15 @@
+// app/api/webhooks/whatsapp/route.ts
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import Pusher from "pusher"
+
+const pusher = new Pusher({
+    appId: process.env.PUSHER_APP_ID!,
+    key: process.env.NEXT_PUBLIC_PUSHER_KEY!,
+    secret: process.env.PUSHER_SECRET!,
+    cluster: process.env.PUSHER_CLUSTER!,
+    useTLS: true,
+});
 
 // 1. VERIFICACIÓN (GET): Meta llama a esto para validar tu URL
 export async function GET(req: Request) {
@@ -56,18 +66,29 @@ export async function POST(req: Request) {
         }
     });
 
-    // 4. Guardar el mensaje (con validación de duplicados vía metaMessageId)
-    await prisma.message.upsert({
-        where: { metaMessageId: messageData.id },
-        update: {}, // Si ya existe, no hacemos nada
-        create: {
-            tenantId: config.tenantId,
-            conversationId: conversation.id,
-            messageText: messageData.text.body,
-            metaMessageId: messageData.id,
-            senderType: 'LEAD' // O lo que tengas en tu enum SenderType
-        }
+    // 4. Guardar el mensaje y verificar si es nuevo
+    // Prisma upsert es perfecto, pero necesitamos saber si creó algo.
+    // Una forma sencilla es buscar primero, o usar un approach donde 
+    // el resultado nos diga si es nuevo.
+
+    const existingMessage = await prisma.message.findUnique({
+        where: { metaMessageId: messageData.id }
     });
+
+    if (!existingMessage) {
+        const newMessage = await prisma.message.create({
+            data: {
+                tenantId: config.tenantId,
+                conversationId: conversation.id,
+                messageText: messageData.text.body,
+                metaMessageId: messageData.id,
+                senderType: 'LEAD'
+            }
+        });
+
+        // 5. Solo disparamos Pusher si efectivamente acabamos de crear el registro
+        await pusher.trigger(`chat-${conversation.id}`, "new-message", newMessage);
+    }
 
     return NextResponse.json({ status: 'ok' });
 }
