@@ -39,7 +39,7 @@ model Property {
   createdAt DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
-}
+} 
 
 model User {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
