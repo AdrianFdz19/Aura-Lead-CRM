@@ -1,6 +1,6 @@
 // lib/propertyService.ts
-  
-import prisma from './prisma'; // Tu instancia singleton
+
+import prisma from './prisma'
 import { generateEmbedding } from './ai'; // La función que creamos antes
 
 export const propertyService = {
@@ -16,14 +16,10 @@ export const propertyService = {
       `${data.title} - ${data.description} - ${data.location}`
     );
 
-    console.log("¿Prisma está definido?", prisma);
-
     // 2. Guardamos en la base de datos
-    return await prisma.property.create({
-      data: {
-        ...data,
-        embedding: embedding as any,
-      },
-    });
+    return await prisma.$executeRaw`
+      INSERT INTO "Property" ("id", "title", "description", "price", "location", "tenant_id", "embedding")
+      VALUES (gen_random_uuid(), ${data.title}, ${data.description}, ${data.price}::decimal, ${data.location}, ${data.tenantId}::uuid, ${`[${embedding.join(',')}]`}::vector)
+    `;
   }
 };
