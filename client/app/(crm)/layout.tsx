@@ -2,8 +2,8 @@
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
-import CrmHeader from "../components/CrmHeader";
 import { WhatsAppGuard } from "../components/WhatsappGuard";
+import ClientLayoutWrapper from "../components/ClientLayoutWrapper";
 
 export default async function CrmLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
@@ -23,14 +23,13 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <CrmHeader />
-      <main className="max-w-[1400px] mx-auto px-6 py-8">
-        <WhatsAppGuard>
-          {children}
-        </WhatsAppGuard>
-      </main>
-    </div>
+      <ClientLayoutWrapper>
+        <main className="max-w-[1400px] mx-auto px-6 py-8">
+          <WhatsAppGuard>
+            {children}
+          </WhatsAppGuard>
+        </main>
+      </ClientLayoutWrapper>
   );
 }
 
