@@ -26,20 +26,34 @@ model Tenant {
   @@map("tenants")
 }
 
+enum PropertyStatus {
+  AVAILABLE
+  OCCUPIED
+  PENDING
+}
+
 model Property {
-  id          String                       @id @default(uuid())
+  id          String         @id @default(uuid())
   title       String
   description String
   price       Decimal
   location    String
-  // Este campo almacenará el vector de la descripción para la IA
+  images      String[]       @default([])
+  
+  // Nuevos campos
+  status      PropertyStatus @default(AVAILABLE)
+  leads       Int            @default(0)
+  commission  Decimal        @default(0)
+
   embedding   Unsupported("vector(1536)")?
 
-  tenantId  String   @map("tenant_id") @db.Uuid
-  createdAt DateTime @default(now())
+  tenantId    String         @map("tenant_id") @db.Uuid
+  createdAt   DateTime       @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-} 
+  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+
+  @@map("properties")
+}
 
 model User {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

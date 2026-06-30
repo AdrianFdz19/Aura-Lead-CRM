@@ -12,6 +12,7 @@ export async function POST(req: Request) {
 
   // 2. Leer el cuerpo de la petición (solo los datos del formulario)
   const body = await req.json();
+  console.log(body);
 
   // 3. Crear usando el tenantId que viene de la SESIÓN (no del cuerpo)
   try {

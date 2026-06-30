@@ -23,13 +23,11 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   }
 
   return (
-      <ClientLayoutWrapper>
-        <main className="max-w-[1400px] mx-auto px-6 py-8">
-          <WhatsAppGuard>
-            {children}
-          </WhatsAppGuard>
-        </main>
-      </ClientLayoutWrapper>
+    <ClientLayoutWrapper>
+      <WhatsAppGuard>
+        {children}
+      </WhatsAppGuard>
+    </ClientLayoutWrapper>
   );
 }
 
