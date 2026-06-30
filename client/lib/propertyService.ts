@@ -3,6 +3,13 @@
 import prisma from './prisma'
 import { generateEmbedding } from './ai'; // La función que creamos antes
 
+export const getPropertiesByTenant = async (tenantId: string) => {
+  return await prisma.property.findMany({
+    where: { tenantId },
+    orderBy: { createdAt: 'desc' }
+  });
+};  
+
 export const propertyService = {
   // Create Property Function
   async createProperty(data: {
@@ -11,6 +18,9 @@ export const propertyService = {
     description: string;
     price: number;
     location: string;
+    images: string[];
+    status?: 'AVAILABLE' | 'OCCUPIED' | 'PENDING'; // Opcional
+    commission?: number; // Opcional
   }) {
     // 1. Generamos el vector antes de guardar
     const embedding = await generateEmbedding(
@@ -19,9 +29,22 @@ export const propertyService = {
 
     // 2. Guardamos en la base de datos
     return await prisma.$executeRaw`
-      INSERT INTO "Property" ("id", "title", "description", "price", "location", "tenant_id", "embedding")
-      VALUES (gen_random_uuid(), ${data.title}, ${data.description}, ${data.price}::decimal, ${data.location}, ${data.tenantId}::uuid, ${`[${embedding.join(',')}]`}::vector)
-    `;
+    INSERT INTO "properties" 
+    ("id", "title", "description", "price", "location", "tenant_id", "images", "embedding", "status", "commission", "leads")
+    VALUES (
+      gen_random_uuid(), 
+      ${data.title}, 
+      ${data.description}, 
+      ${data.price}::decimal, 
+      ${data.location}, 
+      ${data.tenantId}::uuid, 
+      ${data.images}, 
+      ${`[${embedding.join(',')}]`}::vector,
+      ${data.status || 'AVAILABLE'}::"PropertyStatus",
+      ${data.commission || 0}::decimal,
+      0
+    )
+  `;
   },
 
   // Search Property Function
@@ -38,7 +61,7 @@ export const propertyService = {
     const results = await prisma.$queryRaw`
       SELECT id, title, description, price, location, 
              (embedding <-> ${vectorQuery}::vector) as distance
-      FROM "Property"
+      FROM "properties"
       WHERE "tenant_id" = ${tenantId}::uuid
       ORDER BY distance ASC
       LIMIT 3;

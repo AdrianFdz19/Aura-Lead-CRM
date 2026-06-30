@@ -1,28 +1,36 @@
-// components/crm-header.tsx
-import { logout } from "@/lib/actions";
+// components/CrmHeader.tsx
+import { Bell, Bot, LogOut } from 'lucide-react'; // Asegúrate de tener lucide-react
 
-export default function CrmHeader({ onOpenChat }: { onOpenChat: () => void }) {
+export default function CrmHeader({ onOpenChat, brokerName, brokerRole }: {
+  onOpenChat: () => void,
+  brokerName: string,
+  brokerRole: 'admin' | 'agente'
+}) {
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-        <div className="font-bold text-xl text-blue-600 tracking-tight">
-          MyCRM
-        </div>
+    <header className="h-16 bg-white shadow-sm flex items-center justify-between px-8 z-10">
+      {/* Lado Derecho: Acciones */}
+      <div className="flex items-center gap-4">
 
-        <nav className="flex items-center gap-6">
-          <button onClick={onOpenChat} className="text-sm font-medium text-blue-600 hover:text-blue-800">
-            Asistente IA
-          </button>
-          <span className="text-sm text-gray-500">Workspace</span>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="text-sm font-medium text-gray-700 hover:text-red-600 transition-colors"
-            >
-              Cerrar sesión
-            </button>
-          </form>
-        </nav>
+        <button
+          onClick={onOpenChat}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+        >
+          <Bot size={18} />
+          Asistente
+        </button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <button className="text-slate-400 hover:text-slate-600 transition-colors">
+          <Bell size={20} />
+        </button>
+        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs uppercase">
+          {brokerName.charAt(0)}
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-800">{brokerName}</p>
+          <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">{brokerRole}</p>
+        </div>
       </div>
     </header>
   );
