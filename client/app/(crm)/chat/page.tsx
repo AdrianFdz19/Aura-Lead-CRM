@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Pusher from 'pusher-js';
+import { Bot } from 'lucide-react';
 
 interface Message {
     id: string;
@@ -112,68 +113,93 @@ export default function ChatPage() {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100 max-w-[1400px] mx-auto border-x border-gray-200">
+        <div className="h-[calc(100vh-2rem)] max-w-[1400px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 flex overflow-hidden">
+
             {/* Columna Izquierda: Lista de chats */}
-            <div className="w-1/3 bg-white border-r border-gray-200 overflow-y-auto">
-                <div className="p-4 border-b font-bold text-lg">Chats</div>
-                {conversations.map((conv, index) => (
-                    <div
-                        key={conv.id || index}
-                        onClick={() => handleSelectChat(conv)}
-                        className={`p-4 border-b cursor-pointer hover:bg-gray-50 ${selectedChat?.id === conv.id ? 'bg-blue-50' : ''}`}
-                    >
-                        <div className="font-semibold">{conv.lead.name}</div>
-                        <div className="text-sm text-gray-500 truncate">
-                            {conv.messages[0]?.messageText || 'Sin mensajes'}
+            <div className="w-1/3 bg-slate-50/50 border-r border-slate-100 flex flex-col">
+                <div className="p-6 border-b border-slate-100">
+                    <h2 className="font-bold text-slate-900 text-lg">Mensajes</h2>
+                </div>
+
+                <div className="flex-1 overflow-y-auto">
+                    {conversations.map((conv) => (
+                        <div
+                            key={conv.id}
+                            onClick={() => handleSelectChat(conv)}
+                            className={`p-5 border-b border-slate-100 cursor-pointer transition-all ${selectedChat?.id === conv.id ? 'bg-white border-l-4 border-l-blue-600' : 'hover:bg-white'
+                                }`}
+                        >
+                            <div className="flex justify-between items-start mb-1">
+                                <span className="font-semibold text-slate-900 text-sm">{conv.lead.name}</span>
+                                <span className="text-[10px] text-slate-400">12:30 PM</span>
+                            </div>
+                            <p className="text-xs text-slate-500 truncate">{conv.messages[0]?.messageText || 'Sin mensajes'}</p>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
 
             {/* Columna Derecha: Chat abierto */}
-            <div className="w-2/3 flex flex-col bg-[#E5DDD5]">
+            <div className="w-2/3 flex flex-col bg-slate-50/30">
                 {selectedChat ? (
                     <>
-                        <div className="p-4 bg-white border-b font-semibold">
-                            {selectedChat.lead.name}
+                        {/* Header del Chat */}
+                        <div className="px-6 py-4 bg-white border-b border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-xs">
+                                    {selectedChat.lead.name.charAt(0)}
+                                </div>
+                                <span className="font-semibold text-slate-900">{selectedChat.lead.name}</span>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                            {messages.map((msg, index) => (
-                                <div key={msg.id || index} className={`p-2 rounded-lg max-w-xs ${msg.senderType === 'LEAD' ? 'bg-white self-start' : 'bg-green-200 self-end ml-auto'}`}>
-                                    {msg.messageText}
+
+                        {/* Area de Mensajes */}
+                        <div className="flex-1 overflow-y-auto p-8 space-y-4">
+                            {messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`flex ${msg.senderType === 'AGENT' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm shadow-sm ${msg.senderType === 'AGENT'
+                                            ? 'bg-blue-600 text-white rounded-tr-none'
+                                            : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                                        }`}>
+                                        {msg.messageText}
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Input de mensaje */}
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                if (inputText.trim()) {
-                                    handleSendMessage(inputText);
-                                    setInputText('');
-                                }
-                            }}
-                            className="p-4 bg-white border-t flex gap-2"
-                        >
-                            <input
-                                type="text"
-                                value={inputText}
-                                onChange={(e) => setInputText(e.target.value)}
-                                placeholder="Escribe un mensaje..."
-                                className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                            />
-                            <button
-                                type="submit"
-                                className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition-colors font-medium"
+                        {/* Input */}
+                        <div className="p-4 bg-white border-t border-slate-100">
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault();
+                                    if (inputText.trim()) {
+                                        handleSendMessage(inputText);
+                                        setInputText('');
+                                    }
+                                }}
+                                className="flex gap-2"
                             >
-                                Enviar
-                            </button>
-                        </form>
+                                <input
+                                    value={inputText}
+                                    onChange={(e) => setInputText(e.target.value)}
+                                    placeholder="Escribe un mensaje..."
+                                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
+                                    Enviar
+                                </button>
+                            </form>
+                        </div>
                     </>
                 ) : (
-                    <div className="flex items-center justify-center h-full text-gray-500">
-                        Selecciona un chat para comenzar
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                            <Bot size={24} />
+                        </div>
+                        <p className="text-sm">Selecciona una conversación</p>
                     </div>
                 )}
             </div>
