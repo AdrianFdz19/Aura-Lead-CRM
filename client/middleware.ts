@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
+
   // Las rutas que el middleware debe interceptar obligatoriamente
   matcher: ['/dashboard/:path*', '/checkout/:path*', '/login', '/register'],
 };
