@@ -1,5 +1,5 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Calendar, DollarSign, User } from 'lucide-react';
+import { Phone, Mail, Clock, MapPin, Calendar, DollarSign, User } from 'lucide-react';
 
 export type LeadPriority = 'hot' | 'warm' | 'cold';
 export type OperationType = 'Comprar' | 'Rentar' | 'Vender';
@@ -7,18 +7,15 @@ export type OperationType = 'Comprar' | 'Rentar' | 'Vender';
 export interface Lead {
   id: string;
   name: string;
-  priority: LeadPriority;
-  operation: OperationType;
-  phone: string;
-  email: string;
-  budget: string;
-  zones: string[];
-  specs: string;
-  lastInteraction: string;
-  nextTask: string;
-  nextTaskDate: string;
-  source: string;
-  agent: string;
+  phone?: string | null;
+  email?: string | null;
+  // Campos que vienen de Prisma
+  status: string;
+  customMetadata: any; 
+  // Campo que calculamos en el API
+  lastInteraction: string; 
+  // Campos que antes eran fijos, ahora pueden ser dinámicos
+  priority?: 'hot' | 'warm' | 'cold'; 
 }
 
 interface LeadCardProps {
@@ -45,7 +42,7 @@ const getInitials = (name: string) => {
 const getAvatarColor = (name: string) => {
   const firstLetter = name.trim()[0]?.toUpperCase() || 'A';
   const charCode = firstLetter.charCodeAt(0);
-  
+
   const colors = [
     'bg-blue-100 text-blue-700 border-blue-200',
     'bg-purple-100 text-purple-700 border-purple-200',
@@ -54,119 +51,53 @@ const getAvatarColor = (name: string) => {
     'bg-teal-100 text-teal-700 border-teal-200',
     'bg-orange-100 text-orange-700 border-orange-200',
   ];
-  
+
   // Usamos el código de la letra para elegir siempre el mismo índice
   return colors[charCode % colors.length];
 };
 
-export default function LeadCard({ lead }: LeadCardProps) {
-  const currentPriority = priorityColors[lead.priority];
-  const avatarStyle = getAvatarColor(lead.name);
-  const initials = getInitials(lead.name);
-
-  const handlePhoneClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    window.open(`tel:${lead.phone}`);
-  };
-
-  const handleEmailClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    window.open(`mailto:${lead.email}`);
-  };
+export default function LeadCard({ lead }: { lead: Lead }) {
+  // Fallback seguro si no hay prioridad asignada aún en el metadata
+  const priority = lead.priority ?? 'warm'; 
+  const currentPriority = priorityColors[priority];
 
   return (
-    <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow p-4 cursor-grab active:cursor-grabbing select-none">
+    <div className={`w-full bg-white rounded-xl shadow-sm border-l-4 ${currentPriority.bg} border border-slate-200 p-4 hover:shadow-md transition-all cursor-grab`}>
       
-      {/* 1. ENCABEZADO CON AVATAR NUEVO */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Avatar Circular Dinámico */}
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 border ${avatarStyle}`}>
-            {initials}
-          </div>
-          
-          <div className="min-w-0">
-            <h4 className="font-semibold text-slate-800 text-sm md:text-base leading-tight truncate">
-              {lead.name}
-            </h4>
-            <span className="inline-block mt-0.5 px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-[11px] font-medium">
-              {lead.operation}
-            </span>
-          </div>
-        </div>
-        
-        {/* Etiqueta de Prioridad */}
-        <span className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border shrink-0 ${currentPriority.bg}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${currentPriority.dot}`} />
-          {currentPriority.label}
-        </span>
-      </div>
-
-      {/* 2. ACCIONES RÁPIDAS Y PRESUPUESTO */}
-      <div className="flex items-center justify-between border-b border-dashed border-slate-100 pb-3 mb-3">
-        <div className="flex items-center gap-1 text-emerald-700 font-semibold text-sm">
-          <DollarSign className="w-4 h-4 shrink-0" />
-          <span>{lead.budget}</span>
-        </div>
-        
-        <div className="flex gap-1.5">
-          <button 
-            onClick={handlePhoneClick}
-            className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors border border-slate-200"
-            title="Llamar"
-          >
-            <Phone className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={handleEmailClick}
-            className="p-1.5 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-lg transition-colors border border-slate-200"
-            title="Enviar Correo"
-          >
-            <Mail className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* 3. REQUISITOS */}
-      <div className="space-y-1.5 text-xs text-slate-600 mb-4">
-        <div className="flex items-start gap-1.5">
-          <MapPin className="w-3.5 h-3.5 mt-0.5 text-slate-400 shrink-0" />
-          <span className="truncate">
-            <strong className="text-slate-700">Zonas:</strong> {lead.zones.join(', ')}
-          </span>
-        </div>
-        <div className="pl-5 text-slate-500 italic">
-          {lead.specs}
-        </div>
-      </div>
-
-      {/* 4. HISTORIAL Y PRÓXIMA ACCIÓN */}
-      <div className="bg-slate-50 rounded-lg p-2.5 text-xs border border-slate-100 mb-3">
-        <div className="text-slate-500 mb-1.5 line-clamp-2">
-          <span className="font-medium text-slate-700">Última nota:</span> {lead.lastInteraction}
-        </div>
-        <div className="flex items-center justify-between bg-amber-50 text-amber-800 border border-amber-100 rounded px-2 py-1 font-medium">
-          <div className="flex items-center gap-1 truncate">
-            <Calendar className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span className="truncate">{lead.nextTask}</span>
-          </div>
-          <span className="text-[10px] bg-amber-200/60 px-1.5 py-0.5 rounded text-amber-900 whitespace-nowrap ml-1">
-            {lead.nextTaskDate}
+      {/* 1. Header */}
+      <div className="flex justify-between items-start mb-3">
+        <div>
+          <h4 className="font-bold text-slate-900 text-sm">{lead.name}</h4>
+          {/* Aquí podrías extraer la operación del metadata si la guardas ahí */}
+          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+            {lead.customMetadata?.operation ?? 'Sin operación'}
           </span>
         </div>
       </div>
 
-      {/* 5. PIE DE TARJETA */}
-      <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-medium">
-          {lead.source}
-        </span>
-        <div className="flex items-center gap-1 text-slate-600 font-medium">
-          <User className="w-3 h-3 text-slate-400" />
-          <span>{lead.agent}</span>
-        </div>
+      {/* 2. Último mensaje real de la BD */}
+      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-3">
+        <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-3">
+          "{lead.lastInteraction}"
+        </p>
       </div>
 
+      {/* 3. Acciones */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          <button onClick={() => window.open(`tel:${lead.phone}`)} className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
+            <Phone size={16} />
+          </button>
+          <button onClick={() => window.open(`mailto:${lead.email}`)} className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
+            <Mail size={16} />
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
+          <Clock size={12} />
+          <span>{new Date(lead.customMetadata?.nextTaskDate || new Date()).toLocaleDateString()}</span>
+        </div>
+      </div>
     </div>
   );
 }

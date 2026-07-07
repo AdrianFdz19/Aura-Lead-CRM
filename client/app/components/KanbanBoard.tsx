@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import LeadCard, { Lead } from './LeadCard';
 
 // 1. DEFINICIÓN DE LAS 4 COLUMNAS TÍPICAS
@@ -21,84 +21,46 @@ const KANBAN_COLUMNS: Column[] = [
 
 export default function KanbanBoard() {
   // 2. ESTADO DEL KANBAN SEPARADO POR CLASIFICACIÓN
-  const [boardData, setBoardData] = useState<Record<ColumnId, Lead[]>>({
-    nuevos: [
-      {
-        id: "lead_01",
-        name: "Sofía Martínez",
-        priority: "hot",
-        operation: "Comprar",
-        phone: "+525512345678",
-        email: "sofia.mtz@email.com",
-        budget: "$3,500,000 - $4,200,000",
-        zones: ["Polanco", "Anzures"],
-        specs: "3 Rec. / 2 Baños / Terraza",
-        lastInteraction: "Llamada 28/06: Quiere ver opciones el fin de semana.",
-        nextTask: "Agendar cita de recorrido",
-        nextTaskDate: "02 Jul, 10:00 am",
-        source: "Inmuebles24",
-        agent: "Carlos R."
-      }
-    ],
-    calificados: [
-      {
-        id: "lead_02",
-        name: "Alejandro Ruiz",
-        priority: "warm",
-        operation: "Rentar",
-        phone: "+525598765432",
-        email: "alejandro.ruiz@email.com",
-        budget: "$25,000 - $30,000",
-        zones: ["Roma Norte", "Condesa"],
-        specs: "1 o 2 Rec. / Amueblado / Pet-friendly",
-        lastInteraction: "WhatsApp 29/06: Presupuesto y aval validados.",
-        nextTask: "Enviar opciones por correo",
-        nextTaskDate: "30 Jun, 05:00 pm",
-        source: "Facebook Ads",
-        agent: "Laura G."
-      }
-    ],
-    visitas: [
-      {
-        id: "lead_03",
-        name: "Mariana Costa",
-        priority: "hot",
-        operation: "Comprar",
-        phone: "+525544332211",
-        email: "mariana.c@email.com",
-        budget: "$6,000,000",
-        zones: ["Lomas de Chapultepec"],
-        specs: "Casa / Jardín / Seguridad 24/7",
-        lastInteraction: "Cita confirmada: Segunda visita con su familia.",
-        nextTask: "Mostrar Casa Monte Everest",
-        nextTaskDate: "01 Jul, 04:30 pm",
-        source: "Recomendado",
-        agent: "Carlos R."
-      }
-    ],
-    negociacion: [
-      {
-        id: "lead_04",
-        name: "Roberto Gómez",
-        priority: "warm",
-        operation: "Vender",
-        phone: "+525522110099",
-        email: "roberto.g@email.com",
-        budget: "Valuación: $4,800,000",
-        zones: ["Del Valle"],
-        specs: "Depto 120m² / 2 Estac.",
-        lastInteraction: "Contrato de exclusividad en revisión por el cliente.",
-        nextTask: "Llamada de seguimiento a firmas",
-        nextTaskDate: "03 Jul, 12:00 pm",
-        source: "Sitio Web",
-        agent: "Laura G."
-      }
-    ]
+  const [boardData, setBoardData] = useState<Record<string, any[]>>({
+    nuevos: [],
+    calificados: [],
+    visitas: [],
+    negociacion: [],
   });
+
+  const [loading, setLoading] = useState(true);
+
+  // Traer la informacion de los Leads
+  useEffect(() => {
+    const fetchLeads = async () => {
+      try {
+        const response = await fetch(`/api/leads`);
+        const data = await response.json();
+
+        // Clasificar los leads recibidos según su status de base de datos
+        const grouped = {
+          nuevos: data.filter((l: any) => l.status === 'nuevo'),
+          calificados: data.filter((l: any) => l.status === 'calificado'),
+          visitas: data.filter((l: any) => l.status === 'visita'),
+          negociacion: data.filter((l: any) => l.status === 'negociacion'),
+        };
+
+        setBoardData(grouped);
+      } catch (err) {
+        console.error("Error al cargar leads:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeads();
+  }, []);
+
+  if (loading) return <div className="p-8">Cargando tablero...</div>;
 
   return (
     <div className="w-full min-h-screen bg-slate-50 p-6 overflow-x-auto">
-      
+
       {/* Encabezado del Tablero */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Pipeline Inmobiliario</h1>
@@ -111,8 +73,8 @@ export default function KanbanBoard() {
           const columnLeads = boardData[column.id];
 
           return (
-            <div 
-              key={column.id} 
+            <div
+              key={column.id}
               className="w-80 flex-shrink-0 bg-slate-100 rounded-xl p-3 border border-slate-200/60 shadow-sm"
             >
               {/* Encabezado de la Columna */}
@@ -134,7 +96,15 @@ export default function KanbanBoard() {
               <div className="space-y-3 min-h-[500px]">
                 {columnLeads.length > 0 ? (
                   columnLeads.map((lead) => (
-                    <LeadCard key={lead.id} lead={lead} />
+                    <LeadCard
+                      key={lead.id}
+                      lead={{
+                        ...lead,
+                        lastInteraction: lead.lastMessage || "Sin mensajes", // Mapeo para tu LeadCard
+                        priority: 'hot', // Temporal: puedes añadir un campo 'priority' en tu BD
+                        operation: 'N/A' // Temporal: mapear desde customMetadata
+                      }}
+                    />
                   ))
                 ) : (
                   // Estado vacío si la columna no tiene leads
