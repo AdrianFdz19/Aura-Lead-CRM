@@ -1,7 +1,7 @@
 // En tu server action (ej. src/lib/actions.ts)
 'use server'
 
-import { getSession } from './auth'; // Tu función que lee y verifica el JWT
+import { getSession } from './auth'; // Correcto: Importando desde lib/auth.ts
 import prisma from './prisma';
 import Stripe from 'stripe';
 import { redirect } from 'next/navigation';

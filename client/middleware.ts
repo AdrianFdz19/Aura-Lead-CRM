@@ -40,7 +40,14 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-
   // Las rutas que el middleware debe interceptar obligatoriamente
-  matcher: ['/dashboard/:path*', '/checkout/:path*', '/login', '/register'],
+  matcher: [
+    /*
+     * Coincide con todas las rutas excepto las que comienzan con:
+     * - _next/static (archivos estáticos)
+     * - _next/image (optimización de imágenes)
+     * - favicon.ico (archivo de favicon)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|api/auth/.*|api/webhooks/.*).*)',
+  ],
 };
