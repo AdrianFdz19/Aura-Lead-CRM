@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { Bell, Bot, LogOut, User, ChevronDown } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 export default function CrmHeader({ onOpenChat, brokerName, brokerRole }: {
   onOpenChat: () => void,
@@ -22,6 +23,7 @@ export default function CrmHeader({ onOpenChat, brokerName, brokerRole }: {
   }, []);
 
   const handleLogout = async () => {
+    useStore.getState().reset();
     await fetch('/api/auth/logout', { method: 'POST' });
     window.location.href = '/login';
   };

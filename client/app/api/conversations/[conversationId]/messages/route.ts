@@ -2,11 +2,19 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { decrypt } from '@/lib/encryption';
+import { getSession } from '@/lib/auth';
 
 export async function GET(
     req: Request,
     { params }: { params: Promise<{ conversationId: string }> }
 ) {
+
+    const session = await getSession();
+
+    if (!session || !session.tenantId) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
     try {
         const { conversationId } = await params;
 
@@ -46,7 +54,7 @@ export async function POST(
                 lead: true,
                 tenant: {
                     include: {
-                        whatsappConfig: true 
+                        whatsappConfig: true
                     }
                 }
             }
