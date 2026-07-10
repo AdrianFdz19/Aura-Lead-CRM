@@ -47,12 +47,16 @@ export async function POST(req: Request) {
     // 2. Identificar o Crear el Lead (basado en el wa_id del contacto)
     const lead = await prisma.lead.upsert({
         where: { waId: contactData.wa_id }, // Asegúrate de tener este campo en tu modelo Lead
-        update: { name: contactData.profile?.name },
+        update: {
+            name: contactData.profile?.name,
+            lastMessage: messageData.text.body // <-- AQUÍ LA CLAVE: se actualiza si ya existe
+        },
         create: {
             waId: contactData.wa_id,
             name: contactData.profile?.name || 'Usuario WhatsApp',
             tenantId: config.tenantId,
-            phone: ""
+            phone: "",
+            lastMessage: messageData.text.body
         }
     });
 
@@ -86,8 +90,27 @@ export async function POST(req: Request) {
             }
         });
 
-        // 5. Solo disparamos Pusher si efectivamente acabamos de crear el registro
-        await pusher.trigger(`chat-${conversation.id}`, "new-message", newMessage);
+        // 5. ENVIAR LOS DATOS DE FECHAS EN TIEMPO REAL VÍA PUSHER
+        await pusher.trigger(`tenant-${config.tenantId}`, "new-message", {
+
+            // Pasamos el mensaje completo que ya incluye su campo 'createdAt' nativo de Prisma
+            message: newMessage,
+
+            // Pasamos propiedades de la conversación para actualizar el orden y fecha en ChatPage
+            conversation: {
+                id: conversation.id,
+                lastMessageAt: conversation.lastMessageAt
+            },
+
+            // Datos optimizados para el Kanban
+            lead: {
+                id: lead.id,
+                name: lead.name,
+                lastMessage: messageData.text.body,
+                priority: lead.priority,
+                status: lead.status
+            }
+        });
     }
 
     return NextResponse.json({ status: 'ok' });

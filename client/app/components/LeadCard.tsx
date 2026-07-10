@@ -1,35 +1,22 @@
+'use client';
+
 import React from 'react';
-import { Phone, Mail, Clock, MapPin, Calendar, DollarSign, User } from 'lucide-react';
+import { Phone, Mail } from 'lucide-react';
+import { Lead } from '../types/lead';
 
 export type LeadPriority = 'hot' | 'warm' | 'cold';
-export type OperationType = 'Comprar' | 'Rentar' | 'Vender';
-
-export interface Lead {
-  id: string;
-  name: string;
-  phone?: string | null;
-  email?: string | null;
-  // Campos que vienen de Prisma
-  status: string;
-  customMetadata: any; 
-  // Campo que calculamos en el API
-  lastInteraction: string; 
-  // Campos que antes eran fijos, ahora pueden ser dinámicos
-  priority?: 'hot' | 'warm' | 'cold'; 
-}
 
 interface LeadCardProps {
   lead: Lead;
 }
 
-const priorityColors: Record<LeadPriority, { bg: string; dot: string; label: string }> = {
-  hot: { bg: 'bg-red-50 text-red-700 border-red-200', dot: 'bg-red-500', label: 'Caliente' },
-  warm: { bg: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500', label: 'Tibio' },
-  cold: { bg: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500', label: 'Frío' },
+const priorityColors: Record<LeadPriority, { bg: string; borderLeft: string; label: string; text: string }> = {
+  hot: { bg: 'bg-red-50/80 border-red-200', borderLeft: 'border-l-red-500', text: 'text-red-800', label: '🔥 Caliente' },
+  warm: { bg: 'bg-amber-50/80 border-amber-200', borderLeft: 'border-l-amber-500', text: 'text-amber-800', label: '⚡ Tibio' },
+  cold: { bg: 'bg-blue-50/80 border-blue-200', borderLeft: 'border-l-blue-500', text: 'text-blue-800', label: '❄️ Frío' },
 };
 
-// 🌟 FUNCIONES UTILITARIAS PARA EL AVATAR
-// Obtiene las iniciales (Ej: "Sofía Martínez" -> "SM")
+// Funciones utilitarias para el Avatar
 const getInitials = (name: string) => {
   const parts = name.trim().split(' ');
   if (parts.length >= 2) {
@@ -38,11 +25,9 @@ const getInitials = (name: string) => {
   return parts[0] ? parts[0][0].toUpperCase() : '??';
 };
 
-// Asigna un color Tailwind fijo basado en la primera letra del nombre
 const getAvatarColor = (name: string) => {
   const firstLetter = name.trim()[0]?.toUpperCase() || 'A';
   const charCode = firstLetter.charCodeAt(0);
-
   const colors = [
     'bg-blue-100 text-blue-700 border-blue-200',
     'bg-purple-100 text-purple-700 border-purple-200',
@@ -51,51 +36,62 @@ const getAvatarColor = (name: string) => {
     'bg-teal-100 text-teal-700 border-teal-200',
     'bg-orange-100 text-orange-700 border-orange-200',
   ];
-
-  // Usamos el código de la letra para elegir siempre el mismo índice
   return colors[charCode % colors.length];
 };
 
-export default function LeadCard({ lead }: { lead: Lead }) {
-  // Fallback seguro si no hay prioridad asignada aún en el metadata
-  const priority = lead.priority ?? 'warm'; 
-  const currentPriority = priorityColors[priority];
+export default function LeadCard({ lead }: LeadCardProps) {
+  // 1. Validar la prioridad de forma segura (Backend a veces envía 'HOT' o string genérico)
+  const rawPriority = (lead.priority?.toLowerCase() || 'warm') as LeadPriority;
+  const currentPriority = priorityColors[rawPriority] || priorityColors.warm;
 
   return (
-    <div className={`w-full bg-white rounded-xl shadow-sm border-l-4 ${currentPriority.bg} border border-slate-200 p-4 hover:shadow-md transition-all cursor-grab`}>
+    <div className={`w-full bg-white rounded-xl shadow-sm border-l-4 border-y border-r border-slate-200 p-4 hover:shadow-md transition-all cursor-grab ${currentPriority.borderLeft}`}>
       
-      {/* 1. Header */}
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <h4 className="font-bold text-slate-900 text-sm">{lead.name}</h4>
-          {/* Aquí podrías extraer la operación del metadata si la guardas ahí */}
-          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-            {lead.customMetadata?.operation ?? 'Sin operación'}
-          </span>
+      {/* 1. Header con Iniciales y Badge de Prioridad */}
+      <div className="flex items-center gap-3 mb-3">
+        {/* Avatar dinámico */}
+        <div className={`w-9 h-9 min-w-9 rounded-full flex items-center justify-center text-xs font-bold border ${getAvatarColor(lead.name)}`}>
+          {getInitials(lead.name)}
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <h4 className="font-bold text-slate-900 text-sm truncate">{lead.name}</h4>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-full border font-medium ${currentPriority.bg} ${currentPriority.text}`}>
+              {currentPriority.label}
+            </span>
+          </div>
         </div>
       </div>
 
       {/* 2. Último mensaje real de la BD */}
-      <div className="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-3">
-        <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-3">
-          "{lead.lastInteraction}"
+      <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-100 mb-3">
+        <p className="text-xs text-slate-600 italic leading-relaxed line-clamp-2">
+          {lead.lastMessage ? `"${lead.lastMessage}"` : "💬 Sin mensajes previos"}
         </p>
       </div>
 
-      {/* 3. Acciones */}
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          <button onClick={() => window.open(`tel:${lead.phone}`)} className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
-            <Phone size={16} />
-          </button>
-          <button onClick={() => window.open(`mailto:${lead.email}`)} className="p-1.5 text-slate-400 hover:text-blue-600 transition-colors">
-            <Mail size={16} />
-          </button>
-        </div>
-        
-        <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400">
-          <Clock size={12} />
-          <span>{new Date(lead.customMetadata?.nextTaskDate || new Date()).toLocaleDateString()}</span>
+      {/* 3. Acciones de contacto directo */}
+      <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+        <div className="flex gap-1">
+          {lead.phone && (
+            <button 
+              onClick={() => window.open(`tel:${lead.phone}`)} 
+              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
+              title="Llamar"
+            >
+              <Phone size={14} />
+            </button>
+          )}
+          {lead.email && (
+            <button 
+              onClick={() => window.open(`mailto:${lead.email}`)} 
+              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors"
+              title="Enviar correo"
+            >
+              <Mail size={14} />
+            </button>
+          )}
         </div>
       </div>
     </div>

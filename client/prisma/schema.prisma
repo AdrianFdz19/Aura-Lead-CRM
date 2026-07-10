@@ -33,24 +33,25 @@ enum PropertyStatus {
 }
 
 model Property {
-  id          String         @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String
   price       Decimal
   location    String
-  images      String[]       @default([])
-  
+  images      String[] @default([])
+
   // Nuevos campos
-  status      PropertyStatus @default(AVAILABLE)
-  leads       Int            @default(0)
-  commission  Decimal        @default(0)
+  status     PropertyStatus @default(AVAILABLE)
+  leads      Int            @default(0)
+  commission Decimal        @default(0)
 
-  embedding   Unsupported("vector(1536)")?
+  embedding Unsupported("vector(1536)")?
 
-  tenantId    String         @map("tenant_id") @db.Uuid
-  createdAt   DateTime       @default(now())
+  tenantId  String   @map("tenant_id") @db.Uuid
+  createdAt DateTime @default(now())
 
-  tenant      Tenant         @relation(fields: [tenantId], references: [id])
+  // Si borras el Tenant, las propiedades se eliminan
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("properties")
 }
@@ -67,7 +68,9 @@ model User {
   assignedLeads Lead[]    @relation("LeadAssignment")
   sentMessages  Message[]
   tasks         Task[]
-  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+
+  // Al borrar Tenant, se eliminan los usuarios
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("users")
 }
@@ -78,7 +81,15 @@ model Subscription {
   plan             String
   status           String
   stripeCustomerId String?
-  tenant           Tenant  @relation(fields: [tenantId], references: [id])
+
+  // Al borrar Tenant, se elimina su suscripción
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+enum LeadPriority {
+  HOT
+  WARM
+  COLD
 }
 
 model Lead {
@@ -90,44 +101,52 @@ model Lead {
   email          String?        @db.VarChar(255)
   phone          String?        @db.VarChar(50)
   status         String         @default("nuevo") @db.VarChar(50)
+  priority       LeadPriority   @default(WARM)
+  lastMessage    String?        @map("last_message") @db.Text
   customMetadata Json           @default("{}") @map("custom_metadata")
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+  // Al borrar un Lead, se borran sus conversaciones, intereses y tareas asociadas
   conversations  Conversation[]
   interests      LeadInterest[]
-  assignedTo     User?          @relation("LeadAssignment", fields: [assignedToId], references: [id])
-  tenant         Tenant         @relation(fields: [tenantId], references: [id])
   tasks          Task[]
+
+  assignedTo User?  @relation("LeadAssignment", fields: [assignedToId], references: [id], onDelete: SetNull)
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("leads")
 }
 
 model Conversation {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId      String    @map("tenant_id") @db.Uuid
-  leadId        String    @unique @map("lead_id") @db.Uuid
-  isOpen        Boolean   @default(true) @map("is_open")
-  lastMessageAt DateTime  @default(now()) @map("last_message_at")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
-  lead          Lead      @relation(fields: [leadId], references: [id])
-  tenant        Tenant    @relation(fields: [tenantId], references: [id])
-  messages      Message[]
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId      String   @map("tenant_id") @db.Uuid
+  leadId        String   @unique @map("lead_id") @db.Uuid
+  isOpen        Boolean  @default(true) @map("is_open")
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at")
+  // Si borras el Lead o el Tenant, la conversación desaparece
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  // Si borras la conversación, se borran los mensajes
+  messages Message[]
 
   @@map("conversations")
 }
 
 model Message {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenantId       String       @map("tenant_id") @db.Uuid
-  conversationId String       @map("conversation_id") @db.Uuid
-  senderType     SenderType   @map("sender_type")
-  senderId       String?      @map("sender_id") @db.Uuid
-  messageText    String       @map("message_text")
-  metaMessageId  String?      @unique @map("meta_message_id")
-  createdAt      DateTime     @default(now()) @map("created_at")
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
-  sender         User?        @relation(fields: [senderId], references: [id])
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String     @map("tenant_id") @db.Uuid
+  conversationId String     @map("conversation_id") @db.Uuid
+  senderType     SenderType @map("sender_type")
+  senderId       String?    @map("sender_id") @db.Uuid
+  messageText    String     @map("message_text")
+  metaMessageId  String?    @unique @map("meta_message_id")
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id])
+  sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
 
   @@map("messages")
 }
@@ -158,7 +177,7 @@ model Product {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
   interests      LeadInterest[]
-  tenant         Tenant         @relation(fields: [tenantId], references: [id])
+  tenant         Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("products")
 }
@@ -168,8 +187,10 @@ model LeadInterest {
   leadId    String   @map("lead_id") @db.Uuid
   productId String   @map("product_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
-  lead      Lead     @relation(fields: [leadId], references: [id])
-  product   Product  @relation(fields: [productId], references: [id])
+
+  // Si borras Lead o Producto, el interés ya no tiene sentido
+  lead    Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@map("lead_interests")
 }
@@ -184,9 +205,10 @@ model Task {
   dueDate      DateTime? @map("due_date")
   isCompleted  Boolean   @default(false) @map("is_completed")
   createdAt    DateTime  @default(now()) @map("created_at")
-  assignedTo   User      @relation(fields: [assignedToId], references: [id])
-  lead         Lead?     @relation(fields: [leadId], references: [id])
-  tenant       Tenant    @relation(fields: [tenantId], references: [id])
+
+  assignedTo User   @relation(fields: [assignedToId], references: [id], onDelete: Cascade)
+  lead       Lead?  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@map("tasks")
 }

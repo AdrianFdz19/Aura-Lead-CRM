@@ -40,9 +40,35 @@
 }
 // Enviar un mensaje
 {
-                messaging_product: 'whatsapp',
-                to: conversation.lead.waId,
-                type: 'text',
-                text: { body: messageText
+  "messaging_product": "whatsapp",
+  "to": "conversation.lead.waId",
+  "type": "text",
+  "text": {
+    "body: messageText"
   }
 }
+// Formato de mensajes en chats
+[
+  {
+    "id": "8f8da144-5ea4-4f46-9c81-e2dbb950be24",
+    "tenantId": "8bf0fd0e-04e2-49c7-a3cd-7cec381fca12",
+    "conversationId": "be14b0bc-72d2-47f2-93d0-307efd34523c",
+    "senderType": "LEAD",
+    "senderId": null,
+    "messageText": "Hola!",
+    "metaMessageId": "wamid.simulado.133",
+    "createdAt": "2026-07-10T17:44:22.108Z"
+  },
+]
+// Formato de objeto Lead para los Lead Cards en el Kanban
+[
+  {
+    "id": "5121001d-1769-443f-bf81-2f74766dca73",
+    "name": "Crystall Molly",
+    "status": "nuevo",
+    "priority": "WARM",
+    "lastMessage": null,
+    "phone": "",
+    "email": "crystal@email.com"
+  },
+]

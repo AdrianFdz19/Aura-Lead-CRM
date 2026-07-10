@@ -1,62 +1,67 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import LeadCard, { Lead } from './LeadCard';
+import LeadCard from './LeadCard';
+import { useStore } from '@/store/useStore';
+import Pusher from 'pusher-js';
 
-// 1. DEFINICIÓN DE LAS 4 COLUMNAS TÍPICAS
-type ColumnId = 'nuevos' | 'calificados' | 'visitas' | 'negociacion';
+// 1. DEFINICIÓN DE LAS COLUMNAS CON SUS IDs DE BASE DE DATOS (Mantenemos consistencia con tu API)
+type ColumnId = 'nuevo' | 'calificado' | 'visita' | 'negociacion';
 
 interface Column {
   id: ColumnId;
   title: string;
-  color: string; // Color para la barra superior de cada columna
+  color: string;
 }
 
+// Alineamos los IDs al singular exacto que devuelve Prisma
 const KANBAN_COLUMNS: Column[] = [
-  { id: 'nuevos', title: 'Primer Contacto', color: 'bg-blue-500' },
-  { id: 'calificados', title: 'Calificados / Perfilados', color: 'bg-purple-500' },
-  { id: 'visitas', title: 'Cita / Recorrido', color: 'bg-amber-500' },
+  { id: 'nuevo', title: 'Primer Contacto', color: 'bg-blue-500' },
+  { id: 'calificado', title: 'Calificados / Perfilados', color: 'bg-purple-500' },
+  { id: 'visita', title: 'Cita / Recorrido', color: 'bg-amber-500' },
   { id: 'negociacion', title: 'Negociación / Cierre', color: 'bg-emerald-500' },
 ];
 
-export default function KanbanBoard() {
-  // 2. ESTADO DEL KANBAN SEPARADO POR CLASIFICACIÓN
-  const [boardData, setBoardData] = useState<Record<string, any[]>>({
-    nuevos: [],
-    calificados: [],
-    visitas: [],
-    negociacion: [],
-  });
+export default function KanbanBoard({ tenantId }: { tenantId: string }) {
+  const leads = useStore((state) => state.leads);
+  const setLeads = useStore((state) => state.setLeads);
 
-  const [loading, setLoading] = useState(true);
-
-  // Traer la informacion de los Leads
   useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        const response = await fetch(`/api/leads`);
-        const data = await response.json();
+    // 2. Cargamos datos una sola vez al montar
+    fetch('/api/leads')
+      .then((res) => res.json())
+      .then((data) => setLeads(data))
+      .catch(console.error);
+  }, [setLeads]);
 
-        // Clasificar los leads recibidos según su status de base de datos
-        const grouped = {
-          nuevos: data.filter((l: any) => l.status === 'nuevo'),
-          calificados: data.filter((l: any) => l.status === 'calificado'),
-          visitas: data.filter((l: any) => l.status === 'visita'),
-          negociacion: data.filter((l: any) => l.status === 'negociacion'),
-        };
+  // 1. Extraemos las funciones del store
+  const handleIncomingMessage = useStore((state) => state.handleIncomingMessage);
+  const removeLead = useStore((state) => state.removeLead);
 
-        setBoardData(grouped);
-      } catch (err) {
-        console.error("Error al cargar leads:", err);
-      } finally {
-        setLoading(false);
-      }
+  useEffect(() => {
+    const pusherClient = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    });
+
+    // 2. IMPORTANTE: Suscríbete a un canal global de la agencia
+    // El backend debe enviar el trigger a "tenant-{tenantId}"
+    const channel = pusherClient.subscribe(`tenant-${tenantId}`);
+
+    channel.bind('new-message', (data: { conversation: any; lead: any; message: any }) => {
+      // 3. Esto actualizará tanto el mensaje (si estás en el chat) como el Kanban
+      handleIncomingMessage(data);
+    });
+
+    // 4. Escuchamos el nuevo evento de eliminación
+    channel.bind('lead-deleted', (data: { leadId: string }) => {
+      removeLead(data.leadId);
+    });
+
+    return () => {
+      pusherClient.unsubscribe(`tenant-${tenantId}`);
+      pusherClient.disconnect();
     };
-
-    fetchLeads();
-  }, []);
-
-  if (loading) return <div className="p-8">Cargando tablero...</div>;
+  }, [handleIncomingMessage, removeLead, tenantId]);
 
   return (
     <div className="w-full min-h-screen bg-slate-50 p-6 overflow-x-auto">
@@ -70,7 +75,8 @@ export default function KanbanBoard() {
       {/* 3. GRID DEL TABLERO KANBAN */}
       <div className="flex gap-4 min-w-[1000px] items-start">
         {KANBAN_COLUMNS.map((column) => {
-          const columnLeads = boardData[column.id];
+          // Ahora column.id ("nuevo") coincide perfectamente con la clave de boardData
+          const columnLeads = leads.filter((l) => l.status === column.id);
 
           return (
             <div
@@ -80,34 +86,23 @@ export default function KanbanBoard() {
               {/* Encabezado de la Columna */}
               <div className="flex items-center justify-between mb-4 px-1">
                 <div className="flex items-center gap-2">
-                  {/* Línea o punto de color según la fase */}
                   <span className={`w-2 h-4 rounded-full ${column.color}`} />
                   <h3 className="font-semibold text-slate-700 text-sm">
                     {column.title}
                   </h3>
                 </div>
-                {/* Contador de leads */}
                 <span className="text-xs bg-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full font-bold">
                   {columnLeads.length}
                 </span>
               </div>
 
-              {/* Contenedor de Tarjetas (Drop Zone simulada) */}
+              {/* Contenedor de Tarjetas */}
               <div className="space-y-3 min-h-[500px]">
                 {columnLeads.length > 0 ? (
                   columnLeads.map((lead) => (
-                    <LeadCard
-                      key={lead.id}
-                      lead={{
-                        ...lead,
-                        lastInteraction: lead.lastMessage || "Sin mensajes", // Mapeo para tu LeadCard
-                        priority: 'hot', // Temporal: puedes añadir un campo 'priority' en tu BD
-                        operation: 'N/A' // Temporal: mapear desde customMetadata
-                      }}
-                    />
+                    <LeadCard key={lead.id} lead={lead} />
                   ))
                 ) : (
-                  // Estado vacío si la columna no tiene leads
                   <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl h-32 text-slate-400 text-xs text-center p-4">
                     <span>Sin leads en esta fase</span>
                   </div>
