@@ -42,7 +42,7 @@ export default function PropertyForm({ tenantId }: { tenantId: string }) {
       <h2 className="text-xl font-bold text-gray-800">Registrar Nueva Propiedad</h2>
       
       <div className="grid grid-cols-2 gap-4">
-        <input name="title" placeholder="Título" className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800" required />
+        <input name="title" placeholder="Título" className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 placeholder:text-gray-400" required />
         <select name="status" className="w-full p-3 border rounded-xl outline-none text-gray-800">
           <option value="AVAILABLE">Disponible</option>
           <option value="OCCUPIED">Ocupado</option>
@@ -50,14 +50,14 @@ export default function PropertyForm({ tenantId }: { tenantId: string }) {
         </select>
       </div>
 
-      <textarea name="description" placeholder="Descripción detallada..." className="w-full p-3 border rounded-xl h-24 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800" required />
+      <textarea name="description" placeholder="Descripción detallada..." className="w-full p-3 border rounded-xl h-24 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 placeholder:text-gray-400" required />
       
       <div className="grid grid-cols-2 gap-4">
-        <input name="price" type="number" placeholder="Precio" className="w-full p-3 border rounded-xl text-gray-800" required />
-        <input name="commission" type="number" placeholder="Comisión" className="w-full p-3 border rounded-xl text-gray-800" />
+        <input name="price" type="number" placeholder="Precio" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" required />
+        <input name="commission" type="number" placeholder="Comisión" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" />
       </div>
 
-      <input name="location" placeholder="Ubicación" className="w-full p-3 border rounded-xl text-gray-800" required />
+      <input name="location" placeholder="Ubicación" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" required />
 
       <div className="border-2 border-dashed border-gray-200 p-6 rounded-2xl text-center hover:border-indigo-400 transition-colors">
         <input type="file" multiple accept="image/*" onChange={(e) => setFiles(Array.from(e.target.files || []))} className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700" />
