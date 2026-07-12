@@ -4,23 +4,16 @@ import React, { useEffect, useState } from 'react';
 import LeadCard from './LeadCard';
 import { useStore } from '@/store/useStore';
 import Pusher from 'pusher-js';
+import { PIPELINE_STAGES } from '../constants/pipeline';
 
 // 1. DEFINICIÓN DE LAS COLUMNAS CON SUS IDs DE BASE DE DATOS (Mantenemos consistencia con tu API)
-type ColumnId = 'nuevo' | 'calificado' | 'visita' | 'negociacion';
+type ColumnId = 'NEW' | 'QUALIFIED' | 'VISIT' | 'NEGOTIATION';
 
 interface Column {
   id: ColumnId;
-  title: string;
+  label: string;
   color: string;
 }
-
-// Alineamos los IDs al singular exacto que devuelve Prisma
-const KANBAN_COLUMNS: Column[] = [
-  { id: 'nuevo', title: 'Primer Contacto', color: 'bg-blue-500' },
-  { id: 'calificado', title: 'Calificados / Perfilados', color: 'bg-purple-500' },
-  { id: 'visita', title: 'Cita / Recorrido', color: 'bg-amber-500' },
-  { id: 'negociacion', title: 'Negociación / Cierre', color: 'bg-emerald-500' },
-];
 
 export default function KanbanBoard({ tenantId }: { tenantId: string }) {
   const leads = useStore((state) => state.leads);
@@ -74,7 +67,7 @@ export default function KanbanBoard({ tenantId }: { tenantId: string }) {
 
       {/* 3. GRID DEL TABLERO KANBAN */}
       <div className="flex gap-4 min-w-[1000px] items-start">
-        {KANBAN_COLUMNS.map((column) => {
+        {PIPELINE_STAGES.map((column) => {
           // Ahora column.id ("nuevo") coincide perfectamente con la clave de boardData
           const columnLeads = leads.filter((l) => l.status === column.id);
 
@@ -88,7 +81,7 @@ export default function KanbanBoard({ tenantId }: { tenantId: string }) {
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-4 rounded-full ${column.color}`} />
                   <h3 className="font-semibold text-slate-700 text-sm">
-                    {column.title}
+                    {column.label}
                   </h3>
                 </div>
                 <span className="text-xs bg-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full font-bold">
