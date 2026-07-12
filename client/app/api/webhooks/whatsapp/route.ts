@@ -56,7 +56,8 @@ export async function POST(req: Request) {
             name: contactData.profile?.name || 'Usuario WhatsApp',
             tenantId: config.tenantId,
             phone: "",
-            lastMessage: messageData.text.body
+            lastMessage: messageData.text.body,
+            status: "NEW"
         }
     });
 
