@@ -10,6 +10,8 @@ import { Message } from '../types/chat';
 export default function ChatPage({ tenantId }: { tenantId: string }) {
     // 1. Consumimos el estado directamente del store
     const { messages: allMessages, conversations, setConversations, handleIncomingMessage } = useStore();
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [aiResponse, setAiResponse] = useState<string | null>(null);
 
     // Mantenemos estados locales solo para la UI de navegación y entrada
     const [selectedChat, setSelectedChat] = useState<any | null>(null);
@@ -116,7 +118,10 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
     const suggestResponse = async () => {
         const lastMsgIndex: number = messages.length - 1;
         const { conversationId, senderType, messageText } = messages[lastMsgIndex];
-        console.log(`Sugeriendo respuesta con AI: ultimo mensaje > ${messageText}. enviado por ${senderType}. ID de conversacion ${conversationId}`);
+
+        if (messages.length === 0) return;
+        setIsGenerating(true);
+
         try {
             const body = {
                 conversationId,
@@ -130,12 +135,15 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
 
             if (res.ok) {
                 const data = await res.json();
+                setAiResponse(data.reply);
                 console.log(`Recibido con exito. `, data);
             } else {
                 console.log(`Fallo del cliente.`)
             }
         } catch (err) {
             console.error(`Fallo del servidor: `, err);
+        } finally {
+            setIsGenerating(false);
         }
     };
 
@@ -199,27 +207,47 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
 
                         {/* Input */}
                         <div className="p-4 bg-white border-t border-slate-100">
-                            <form
-                                onSubmit={(e) => {
-                                    e.preventDefault();
-                                    if (inputText.trim()) {
-                                        handleSendMessage(inputText);
-                                        setInputText('');
-                                    }
-                                }}
-                                className="flex gap-2"
-                            >
-                                <button className='text-black cursor-pointer'
-                                    onClick={() => suggestResponse()}
+                            {/* Contenedor de la Sugerencia IA (si existe) */}
+                            {aiResponse && (
+                                <div className="mb-3 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start justify-between animate-in fade-in slide-in-from-bottom-2">
+                                    <div className="text-xs text-blue-800 font-medium">
+                                        <span className="block font-bold mb-1">Sugerencia IA:</span>
+                                        {aiResponse}
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button onClick={() => { setInputText(aiResponse); setAiResponse(null); }} className="text-blue-600 hover:text-blue-800 p-1">
+                                            ✓
+                                        </button>
+                                        <button onClick={() => setAiResponse(null)} className="text-slate-400 hover:text-red-500 p-1">
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            <form onSubmit={(e) => { e.preventDefault(); if (inputText.trim()) { handleSendMessage(inputText); setInputText(''); } }} className="flex gap-2">
+                                {/* Botón IA con Tooltip/Loading */}
+                                <button
+                                    type="button"
+                                    disabled={isGenerating}
+                                    onClick={suggestResponse}
+                                    title={isGenerating ? "Pensando..." : "Sugerir respuesta con IA"}
+                                    className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                 >
-                                    Sugerir Respuesta con IA
+                                    {isGenerating ? (
+                                        <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+                                    ) : (
+                                        <Bot size={20} />
+                                    )}
                                 </button>
+
                                 <input
                                     value={inputText}
                                     onChange={(e) => setInputText(e.target.value)}
                                     placeholder="Escribe un mensaje..."
-                                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder:text-slate-400"
                                 />
+
                                 <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
                                     Enviar
                                 </button>
