@@ -60,58 +60,84 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
     };
 
     // Enviar un mensaje
-        const handleSendMessage = async (text: string) => {
-            if (!selectedChat) return;
+    const handleSendMessage = async (text: string) => {
+        if (!selectedChat) return;
 
-            // 1. Crear el objeto de mensaje "optimista"
-            const tempMessage: Message = {
-                id: Date.now().toString(),
-                messageText: text,
-                senderType: 'AGENT',
-                conversationId: selectedChat.id, // <--- AÑADE ESTA LÍNEA
-            };
-
-            // 2. Actualizar UI al instante en el store (para mantener consistencia)
-            // Usamos una función similar a handleIncomingMessage o un set directo
-            useStore.getState().setMessages(selectedChat.id, [
-                ...(allMessages[selectedChat.id] || []),
-                tempMessage
-            ]);
-
-            setInputText('');
-
-            try {
-                // 3. Ejecutar la petición real
-                const res = await fetch(`/api/conversations/${selectedChat.id}/messages`, {
-                    method: 'POST',
-                    body: JSON.stringify({ messageText: text }),
-                });
-
-                if (!res.ok) throw new Error('Error al enviar');
-
-                const savedMessage = await res.json();
-                useStore.getState().replaceTempMessage(selectedChat.id, tempMessage.id, savedMessage);
-
-                // 5. Opcional: Actualizar el preview en la lista de conversaciones
-                // Esto asegura que el "lastMessage" cambie inmediatamente
-                const updatedConvs = conversations.map(c =>
-                    c.id === selectedChat.id
-                        ? { ...c, messages: [savedMessage], lastMessageAt: new Date().toISOString() }
-                        : c
-                );
-                setConversations(updatedConvs);
-
-            } catch (error) {
-                console.error('Error:', error);
-                // Revertir: remover el mensaje temporal si falla
-                const currentMessages = allMessages[selectedChat.id] || [];
-                useStore.getState().setMessages(
-                    selectedChat.id,
-                    currentMessages.filter((msg) => msg.id !== tempMessage.id)
-                );
-                alert('No se pudo enviar el mensaje. Intenta de nuevo.');
-            }
+        // 1. Crear el objeto de mensaje "optimista"
+        const tempMessage: Message = {
+            id: Date.now().toString(),
+            messageText: text,
+            senderType: 'AGENT',
+            conversationId: selectedChat.id, // <--- AÑADE ESTA LÍNEA
         };
+
+        // 2. Actualizar UI al instante en el store (para mantener consistencia)
+        // Usamos una función similar a handleIncomingMessage o un set directo
+        useStore.getState().setMessages(selectedChat.id, [
+            ...(allMessages[selectedChat.id] || []),
+            tempMessage
+        ]);
+
+        setInputText('');
+
+        try {
+            // 3. Ejecutar la petición real
+            const res = await fetch(`/api/conversations/${selectedChat.id}/messages`, {
+                method: 'POST',
+                body: JSON.stringify({ messageText: text }),
+            });
+
+            if (!res.ok) throw new Error('Error al enviar');
+
+            const savedMessage = await res.json();
+            useStore.getState().replaceTempMessage(selectedChat.id, tempMessage.id, savedMessage);
+
+            // 5. Opcional: Actualizar el preview en la lista de conversaciones
+            // Esto asegura que el "lastMessage" cambie inmediatamente
+            const updatedConvs = conversations.map(c =>
+                c.id === selectedChat.id
+                    ? { ...c, messages: [savedMessage], lastMessageAt: new Date().toISOString() }
+                    : c
+            );
+            setConversations(updatedConvs);
+
+        } catch (error) {
+            console.error('Error:', error);
+            // Revertir: remover el mensaje temporal si falla
+            const currentMessages = allMessages[selectedChat.id] || [];
+            useStore.getState().setMessages(
+                selectedChat.id,
+                currentMessages.filter((msg) => msg.id !== tempMessage.id)
+            );
+            alert('No se pudo enviar el mensaje. Intenta de nuevo.');
+        }
+    };
+
+    const suggestResponse = async () => {
+        const lastMsgIndex: number = messages.length - 1;
+        const { conversationId, senderType, messageText } = messages[lastMsgIndex];
+        console.log(`Sugeriendo respuesta con AI: ultimo mensaje > ${messageText}. enviado por ${senderType}. ID de conversacion ${conversationId}`);
+        try {
+            const body = {
+                conversationId,
+                senderType,
+                messageText
+            }
+            const res = await fetch(`/api/chat/suggest-response`, {
+                method: 'POST',
+                body: JSON.stringify(body)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                console.log(`Recibido con exito. `, data);
+            } else {
+                console.log(`Fallo del cliente.`)
+            }
+        } catch (err) {
+            console.error(`Fallo del servidor: `, err);
+        }
+    };
 
     return (
         <div className="h-[calc(100vh-2rem)] max-w-[1400px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 flex overflow-hidden">
@@ -183,6 +209,11 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
                                 }}
                                 className="flex gap-2"
                             >
+                                <button className='text-black cursor-pointer'
+                                    onClick={() => suggestResponse()}
+                                >
+                                    Sugerir Respuesta con IA
+                                </button>
                                 <input
                                     value={inputText}
                                     onChange={(e) => setInputText(e.target.value)}
