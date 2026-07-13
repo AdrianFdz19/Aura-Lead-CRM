@@ -23,11 +23,14 @@ export async function POST(req: NextRequest) {
         }
 
         //1.- Obtener mensajes previos de la base de datos
-        const previousMessages = await prisma.message.findMany({
+        const previousMessagesDesc = await prisma.message.findMany({
             where: { conversationId },
-            orderBy: { createdAt: "asc" },
+            orderBy: { createdAt: "desc" },
             take: 5, // Traer los ultimos 5 mensajes para el contexto 
         });
+
+        // 2. REVERTIR el array para que queden en orden cronológico (ascendente)
+        const previousMessages = previousMessagesDesc.reverse();
 
         // 1. Buscamos propiedades relevantes según el mensaje actual
         const tenantId = session.tenantId; // Asegúrate de tenerlo de la sesión
@@ -45,21 +48,32 @@ export async function POST(req: NextRequest) {
             content: msg.messageText
         }));
 
+        console.log(formattedHistory);
+
+        const systemPrompt = `
+            Eres un asistente inmobiliario virtual.
+            Tu tarea es redactar la respuesta que el LEAD (cliente) debe recibir.
+            - EL AGENTE es quien gestiona la conversación.
+            - SI EL ÚLTIMO MENSAJE FUE ENVIADO POR EL AGENTE: Analiza la intención del agente y redacta la respuesta que el LEAD debería recibir a continuación o el seguimiento natural.
+            - SI EL ÚLTIMO MENSAJE FUE ENVIADO POR EL LEAD: Responde directamente al lead.
+            NUNCA redactes respuestas dirigidas al agente.
+        `;
+
         // 3. Llamada a OpenAI
         const completion = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL as string,
             messages: [
                 {
                     role: "system",
-                    content: `Eres un asistente inmobiliario virtual que trabaja para el agente.
-                    Tu único objetivo es redactar respuestas para el cliente (LEAD).
-                    - NUNCA escribas respuestas dirigidas al agente.
-                    - SIEMPRE responde al cliente basándote en el historial de la conversación.
-                    - Contexto de propiedades: ${context}
-                    - Si el último mensaje en la conversación fue enviado por el agente, analiza qué esperaba el agente del lead y redacta la respuesta que el lead debería recibir o el seguimiento natural tras el mensaje del agente.`
+                    content: `${systemPrompt}
+            
+                    INFORMACIÓN DE PROPIEDADES DISPONIBLES:
+                    ${context}
+                    
+                    Usa esta información estrictamente para responder a las consultas del lead. 
+                    Si la información no está aquí, no inventes datos.`
                 },
-                ...formattedHistory,
-                { role: "user", content: messageText }
+                ...formattedHistory
             ],
         });
 
