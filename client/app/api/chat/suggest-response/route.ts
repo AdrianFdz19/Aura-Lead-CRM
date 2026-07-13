@@ -7,82 +7,125 @@ import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+const tools: any = [
+    {
+        type: "function",
+        function: {
+            name: "searchProperties",
+            description: "Busca propiedades inmobiliarias en base a las preferencias, dudas o interés del lead.",
+            parameters: {
+                type: "object",
+                properties: {
+                    query: { type: "string", description: "La consulta o tema de interés del lead (ej: 'casas con 3 habitaciones')" }
+                },
+                required: ["query"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "updateLeadStatus",
+            description: "Actualiza el estado de un lead en el CRM basándose en la intención detectada en la conversación.",
+            parameters: {
+                type: "object",
+                properties: {
+                    newStatus: {
+                        type: "string",
+                        enum: ["QUALIFIED", "VISIT", "NEGOTIATION"], // Tus estados definidos
+                        description: "El nuevo estado al que debe pasar el lead."
+                    },
+                    reason: { type: "string", description: "Breve justificación de por qué el lead cambió de estado." }
+                },
+                required: ["newStatus", "reason"]
+            }
+        }
+    }
+];
+
+interface Property {
+    title: string;
+    description: string;
+    price: number;
+    location: string;
+}
+
 export async function POST(req: NextRequest) {
     try {
-
         const session = await getSession();
-
-        if (!session) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
+        if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
         const { conversationId, senderType, messageText } = await req.json();
-
         if (!conversationId || !senderType || !messageText) {
             return NextResponse.json({ error: 'Faltan campos' }, { status: 401 });
         }
 
-        //1.- Obtener mensajes previos de la base de datos
+        // 1. Obtener y ordenar historial
         const previousMessagesDesc = await prisma.message.findMany({
             where: { conversationId },
             orderBy: { createdAt: "desc" },
-            take: 5, // Traer los ultimos 5 mensajes para el contexto 
+            take: 5,
         });
+        const formattedHistory: ChatCompletionMessageParam[] = previousMessagesDesc
+            .reverse()
+            .map((msg) => ({
+                role: msg.senderType === 'LEAD' ? 'user' : 'assistant',
+                content: msg.messageText
+            }));
 
-        // 2. REVERTIR el array para que queden en orden cronológico (ascendente)
-        const previousMessages = previousMessagesDesc.reverse();
-
-        // 1. Buscamos propiedades relevantes según el mensaje actual
-        const tenantId = session.tenantId; // Asegúrate de tenerlo de la sesión
-        const properties: any = await propertyService.searchProperties(tenantId, messageText);
-
-        const context = properties.length > 0
-            ? properties.map((p: any) => `- ${p.title}: ${p.description}. Precio: $${p.price}.`).join('\n')
-            : "No se encontraron propiedades específicas para esta consulta.";
-
-        type OpenAIRole = 'user' | 'assistant' | 'system';
-
-        // 2. Mapeo para OpenAI (de tu senderType a roles de LLM)
-        const formattedHistory: ChatCompletionMessageParam[] = previousMessages.map((msg) => ({
-            role: msg.senderType === 'LEAD' ? 'user' : 'assistant',
-            content: msg.messageText
-        }));
-
-        console.log(formattedHistory);
-
-        const systemPrompt = `
-            Eres un asistente inmobiliario virtual.
-            Tu tarea es redactar la respuesta que el LEAD (cliente) debe recibir.
-            - EL AGENTE es quien gestiona la conversación.
-            - SI EL ÚLTIMO MENSAJE FUE ENVIADO POR EL AGENTE: Analiza la intención del agente y redacta la respuesta que el LEAD debería recibir a continuación o el seguimiento natural.
-            - SI EL ÚLTIMO MENSAJE FUE ENVIADO POR EL LEAD: Responde directamente al lead.
-            NUNCA redactes respuestas dirigidas al agente.
-        `;
-
-        // 3. Llamada a OpenAI
-        const completion = await openai.chat.completions.create({
+        // 2. Primera llamada: OpenAI decide si necesita usar la herramienta
+        const response = await openai.chat.completions.create({
             model: process.env.OPENAI_MODEL as string,
             messages: [
-                {
-                    role: "system",
-                    content: `${systemPrompt}
-            
-                    INFORMACIÓN DE PROPIEDADES DISPONIBLES:
-                    ${context}
-                    
-                    Usa esta información estrictamente para responder a las consultas del lead. 
-                    Si la información no está aquí, no inventes datos.`
-                },
-                ...formattedHistory
+                { role: "system", content: "Eres un asistente inmobiliario. Si el usuario pregunta por propiedades, usa searchProperties. Si no, responde directamente." },
+                ...formattedHistory,
+                { role: "user", content: messageText }
             ],
+            tools: tools,
+            tool_choice: "auto"
         });
 
-        const reply = completion.choices[0].message.content;
+        const responseMessage = response.choices[0].message;
 
-        return NextResponse.json({ reply }, { status: 200 });
+        // 3. Si la IA decide llamar a la función
+        if (responseMessage.tool_calls) {
+            const toolCall = responseMessage.tool_calls[0];
+
+            // VALIDACIÓN DE TIPO NECESARIA:
+            if (toolCall.type === 'function') {
+                const query = JSON.parse(toolCall.function.arguments).query;
+
+                // Buscamos propiedades reales
+                const properties: any = await propertyService.searchProperties(session.tenantId, query);
+                const context = properties.length > 0
+                    ? properties.map((p: any) => `- ${p.title}: ${p.description}. Precio: $${p.price}.`).join('\n')
+                    : "No se encontraron propiedades.";
+
+                // 4. Segunda llamada: Generar respuesta final
+                const finalCompletion = await openai.chat.completions.create({
+                    model: process.env.OPENAI_MODEL as string,
+                    messages: [
+                        { role: "system", content: `Responde basado estrictamente en este contexto: ${context}` },
+                        ...formattedHistory,
+                        { role: "user", content: messageText },
+                        responseMessage,
+                        {
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            content: context
+                        }
+                    ]
+                });
+
+                return NextResponse.json({ reply: finalCompletion.choices[0].message.content });
+            }
+        }
+
+        // Si no usó herramientas, devolvemos la respuesta directa
+        return NextResponse.json({ reply: responseMessage.content });
 
     } catch (err) {
         console.error("Error en chat API:", err);
         return NextResponse.json({ error: "Error" }, { status: 500 });
     }
-};
+}
