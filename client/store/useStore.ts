@@ -13,17 +13,18 @@ interface AppStore {
   leads: Lead[];
   messages: Record<string, Message[]>;
   conversations: any[];
-  
+
   // Acciones
   setLeads: (leads: Lead[]) => void;
   setMessages: (conversationId: string, msgs: Message[]) => void;
   setConversations: (convs: any[]) => void;
   handleIncomingMessage: (payload: { message: Message, conversation: any, lead: any }) => void;
   replaceTempMessage: (conversationId: string, tempId: string, finalMessage: Message) => void;
+  updateLeadStatus: (leadId: string, newStatus: string) => void;
   removeLead: (leadId: string) => void;
-  
+
   // NUEVA ACCIÓN DE LIMPIEZA
-  reset: () => void; 
+  reset: () => void;
 }
 
 export const useStore = create<AppStore>((set) => ({
@@ -44,7 +45,7 @@ export const useStore = create<AppStore>((set) => ({
     const leadExists = state.leads.some((l) => l.id === lead.id);
     const updatedLeads = leadExists
       ? state.leads.map((l) => l.id === lead.id ? { ...l, lastMessage: message.messageText } : l)
-      : [...state.leads, { lastMessage: message.messageText, status: lead.status || 'nuevo', ...lead }];
+      : [...state.leads, { lastMessage: message.messageText, status: lead.status || 'NEW', ...lead }];
 
     let updatedConversations;
     const conversationExists = state.conversations.some(c => c.id === conversation.id);
@@ -78,12 +79,28 @@ export const useStore = create<AppStore>((set) => ({
         : [...currentChatMessages, message]
     };
 
-    return { 
-      leads: updatedLeads, 
-      messages: updatedMessages, 
-      conversations: updatedConversations 
+    return {
+      leads: updatedLeads,
+      messages: updatedMessages,
+      conversations: updatedConversations
     };
   }),
+
+  // Update Lead Status
+  updateLeadStatus: (leadId: string, newStatus: string) => {
+    console.log(leadId, newStatus);
+    set((state) => ({
+      leads: state.leads.map((l) =>
+        l.id === leadId ? { ...l, status: newStatus } : l
+      ),
+    }));
+
+    // Llamada al backend
+    fetch(`/api/leads/${leadId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: newStatus }),
+    });
+  },
 
   replaceTempMessage: (conversationId, tempId, finalMessage) => set((state) => {
     const currentMessages = state.messages[conversationId] || [];

@@ -12,6 +12,44 @@ const pusher = new Pusher({
     useTLS: true,
 });
 
+export async function PATCH(
+    req: Request,
+    { params }: { params: Promise<{ leadId: string }> } // 1. Cambia el tipo a Promise
+) {
+    const session = await getSession();
+    if (!session || !session.tenantId) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+    }
+
+    try {
+        // 2. Haz await de params antes de acceder a leadId
+        const { leadId } = await params; 
+        
+        const body = await req.json();
+        const { status } = body;
+
+        if (!leadId) {
+            return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 });
+        }
+
+        if (!status) {
+            return NextResponse.json({ error: 'Status is required' }, { status: 400 });
+        }
+
+        const updatedLead = await prisma.lead.update({
+            where: { id: leadId, tenantId: session.tenantId },
+            data: { status },
+        });
+
+        await pusher.trigger(`tenant-${session.tenantId}`, "lead-updated", updatedLead);
+
+        return NextResponse.json(updatedLead);
+    } catch (err) {
+        console.error('Error updating lead status:', err);
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
 export async function DELETE(
     req: Request,
     { params }: { params: { leadId: string } }
