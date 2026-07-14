@@ -1,9 +1,19 @@
+import { leadService } from "@/app/lib/leadService";
 import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { propertyService } from "@/lib/propertyService";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
+import Pusher from "pusher";
+
+const pusher = new Pusher({
+    appId: process.env.PUSHER_APP_ID!,
+    key: process.env.NEXT_PUBLIC_PUSHER_KEY!,
+    secret: process.env.PUSHER_SECRET!,
+    cluster: process.env.PUSHER_CLUSTER!,
+    useTLS: true,
+});
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -89,36 +99,54 @@ export async function POST(req: NextRequest) {
 
         // 3. Si la IA decide llamar a la función
         if (responseMessage.tool_calls) {
-            const toolCall = responseMessage.tool_calls[0];
+            const toolCalls = responseMessage.tool_calls;
 
-            // VALIDACIÓN DE TIPO NECESARIA:
-            if (toolCall.type === 'function') {
-                const query = JSON.parse(toolCall.function.arguments).query;
+            // Ejecutamos TODAS las herramientas que la IA detectó
+            for (const toolCall of toolCalls) {
+                if (toolCall.type === 'function') {
+                    const { name, arguments: args } = toolCall.function;
+                    const functionArgs = JSON.parse(args);
 
-                // Buscamos propiedades reales
-                const properties: any = await propertyService.searchProperties(session.tenantId, query);
-                const context = properties.length > 0
-                    ? properties.map((p: any) => `- ${p.title}: ${p.description}. Precio: $${p.price}.`).join('\n')
-                    : "No se encontraron propiedades.";
+                    if (name === 'updateLeadStatus') {
+                        // El servicio actualiza el CRM y el Kanban por Pusher (Invisible al lead)
+                        await leadService.updateStatusByConversation(conversationId, functionArgs.newStatus);
+                    }
 
-                // 4. Segunda llamada: Generar respuesta final
-                const finalCompletion = await openai.chat.completions.create({
-                    model: process.env.OPENAI_MODEL as string,
-                    messages: [
-                        { role: "system", content: `Responde basado estrictamente en este contexto: ${context}` },
-                        ...formattedHistory,
-                        { role: "user", content: messageText },
-                        responseMessage,
-                        {
-                            role: "tool",
-                            tool_call_id: toolCall.id,
-                            content: context
-                        }
-                    ]
-                });
+                    if (name === 'searchProperties') {
+                        // Preparamos el contexto para la respuesta final
+                        const query = functionArgs.query;
+                        const properties: any = await propertyService.searchProperties(session.tenantId, query);
+                        const context = properties.length > 0
+                            ? properties.map((p: any) => `- ${p.title}: ${p.description}. Precio: $${p.price}.`).join('\n')
+                            : "No se encontraron propiedades.";
 
-                return NextResponse.json({ reply: finalCompletion.choices[0].message.content });
+                        const finalCompletion = await openai.chat.completions.create({
+                            model: process.env.OPENAI_MODEL as string,
+                            messages: [
+                                { role: "system", content: `Responde basado en: ${context}` },
+                                ...formattedHistory,
+                                { role: "user", content: messageText },
+                                responseMessage,
+                                { role: "tool", tool_call_id: toolCall.id, content: context }
+                            ]
+                        });
+                        return NextResponse.json({ reply: finalCompletion.choices[0].message.content });
+                    }
+                }
             }
+
+            // 4. ÚNICA respuesta al usuario (Si hubo búsqueda, incluimos el contexto)
+            // Si solo fue actualización de CRM, la IA responderá naturalmente a la pregunta del lead
+            const finalCompletion = await openai.chat.completions.create({
+                model: process.env.OPENAI_MODEL as string,
+                messages: [
+                    { role: "system", content: "Responde al usuario amablemente. Si actualizaste el CRM, ignora esa acción en el texto, no se lo comuniques al lead." },
+                    ...formattedHistory,
+                    { role: "user", content: messageText }
+                ]
+            });
+
+            return NextResponse.json({ reply: finalCompletion.choices[0].message.content });
         }
 
         // Si no usó herramientas, devolvemos la respuesta directa
