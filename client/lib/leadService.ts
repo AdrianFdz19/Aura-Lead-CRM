@@ -33,7 +33,7 @@ export const leadService = {
 
         // 3. Notificamos vía Pusher
         await pusher.trigger(
-            `tenant-${conversation.tenant_id}`,
+            `tenant-${conversation.tenantId}`,
             "lead-updated",
             { leadId: conversation.leadId, newStatus }
         );
