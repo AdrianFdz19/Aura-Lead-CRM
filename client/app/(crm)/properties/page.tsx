@@ -1,14 +1,8 @@
-import PropertyForm from "@/app/components/PropertyForm";
-import { Bot, Search, Briefcase, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { Search, Briefcase, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { getSession } from "@/lib/auth";
 import { getPropertiesByTenant } from "@/lib/propertyService";
 import { getPublicUrl } from "@/lib/s3";
-
-// Mock de propiedades
-const properties = [
-  { id: 1, name: 'Vila Toscana', location: 'Rosewood Street', type: 'Residential', status: 'Available', price: '$5,000/mo', leads: 5, commission: '$2,500' },
-  { id: 2, name: 'Sunset Heights', location: 'Brooklyn, NY', type: 'Commercial', status: 'Occupied', price: '$12,000/mo', leads: 2, commission: '$6,000' },
-];
+import AddProperty from '@/app/components/AddProperty';
 
 export default async function Dashboard() {
   const session = await getSession();
@@ -18,7 +12,6 @@ export default async function Dashboard() {
 
   // Obtenemos los datos reales
   const properties = await getPropertiesByTenant(session.tenantId);
-  console.log(properties);
 
   // Opcional: Generar URLs firmadas para las imágenes
   const propertiesWithImages = await Promise.all(properties.map(async (p) => ({
@@ -27,9 +20,14 @@ export default async function Dashboard() {
   })));
 
   return (
-    <div className="max-w-[1400px] mx-auto p-6 space-y-6">
+    <div className="w-full h-full bg-slate-50 p-4 md:p-6 space-y-6">
+      {/* Encabezado */}
+      <div className="mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Inventario de Propiedades</h1>
+      </div>
 
       {/* 1. MÉTRICAS SUPERIORES (KPI Cards Estilo Premium CRM) */}
+      {/* Estas tarjetas son un buen resumen, las mantenemos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
@@ -80,73 +78,61 @@ export default async function Dashboard() {
         ))}
       </div>
 
-
-      {/* 2. AI Assistant & Tabla */}
-      <div className="grid grid-cols-12 gap-8">
-        {/* IA Assistant (Estilo Tarjeta Elevada) */}
-        <div className="col-span-3">
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-full">
-            <Bot className="w-8 h-8 text-blue-600 mb-4" />
-            <h2 className="font-bold text-slate-900 mb-1">AI Assistant</h2>
-            <p className="text-sm text-slate-500 mb-6">Optimiza tu gestión de leads con IA.</p>
-            <button className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
-              Nueva Acción
-            </button>
+      {/* 2. Inventario (Tabla Moderna) - Ahora ocupa todo el ancho */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="p-6 border-b border-slate-50 flex justify-between items-center">
+          <div>
+            <h2 className="font-bold text-lg text-slate-900">Tu Inventario</h2>
+            <p className="text-sm text-slate-500 mt-1">Gestiona todas tus propiedades en un solo lugar.</p>
           </div>
-        </div>
-
-        {/* Inventario (Tabla Moderna) */}
-        <div className="col-span-9">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-              <h2 className="font-bold text-lg text-slate-900">Inventario</h2>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 text-slate-400 w-4 h-4" />
-                <input
-                  className="pl-9 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 w-64"
-                  placeholder="Buscar..."
-                />
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <input
+                className="pl-9 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 w-64"
+                placeholder="Buscar por nombre o ubicación..."
+              />
             </div>
-
-            <table className="w-full text-sm">
-              <thead className="text-slate-400 uppercase text-[10px] tracking-widest font-bold">
-                <tr>
-                  <th className="px-6 py-4 text-left">Propiedad</th>
-                  <th className="px-6 py-4 text-left">Estatus</th>
-                  <th className="px-6 py-4 text-left">Precio</th>
-                  <th className="px-6 py-4 text-right">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {propertiesWithImages.map((p) => (
-                  <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4 flex items-center gap-4">
-                      <img src={p.imageUrl || '/placeholder.jpg'} className="w-12 h-12 rounded-xl object-cover shadow-sm" />
-                      <div>
-                        <p className="font-semibold text-slate-900">{p.title}</p>
-                        <p className="text-slate-400 text-xs">{p.location}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
-                        Activa
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-700">${p.price.toString()}</td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">
-                        IA Actions
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {/* El nuevo componente para añadir propiedades */}
+            <AddProperty tenantId={session.tenantId} />
           </div>
         </div>
+
+        <table className="w-full text-sm">
+          <thead className="text-slate-400 uppercase text-[10px] tracking-widest font-bold bg-slate-50/50">
+            <tr>
+              <th className="px-6 py-4 text-left">Propiedad</th>
+              <th className="px-6 py-4 text-left">Estatus</th>
+              <th className="px-6 py-4 text-left">Precio</th>
+              <th className="px-6 py-4 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {propertiesWithImages.map((p) => (
+              <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                <td className="px-6 py-4 flex items-center gap-4">
+                  <img src={p.imageUrl || '/placeholder.jpg'} alt={p.title} className="w-12 h-12 rounded-xl object-cover shadow-sm border border-slate-100" />
+                  <div>
+                    <p className="font-semibold text-slate-900">{p.title}</p>
+                    <p className="text-slate-400 text-xs">{p.location}</p>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
+                    Activa
+                  </span>
+                </td>
+                <td className="px-6 py-4 font-medium text-slate-700">${p.price.toLocaleString()}</td>
+                <td className="px-6 py-4 text-right">
+                  <button className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
+                    Ver Detalles
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <PropertyForm tenantId={session.tenantId} />
     </div>
   );
 }
