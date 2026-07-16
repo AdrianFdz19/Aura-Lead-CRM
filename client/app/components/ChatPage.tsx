@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Pusher from 'pusher-js';
-import { Bot } from 'lucide-react';
+import { Bot, ChevronLeft, Sparkles } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { formatDate } from '../utils/formatDate';
 import { Message } from '../types/chat';
@@ -16,6 +16,9 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
     // Mantenemos estados locales solo para la UI de navegación y entrada
     const [selectedChat, setSelectedChat] = useState<any | null>(null);
     const [inputText, setInputText] = useState('');
+
+    // Ref para el contenedor de mensajes para poder controlar el scroll
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
     // Mensajes específicos para el chat abierto
     const messages = selectedChat ? (allMessages[selectedChat.id] || []) : [];
@@ -60,6 +63,22 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
             useStore.getState().setMessages(conv.id, data);
         }
     };
+
+    // --- INICIO: Lógica para el scroll automático ---
+    useEffect(() => {
+        // Si tenemos una referencia al contenedor de mensajes, hacemos scroll hacia abajo.
+        if (messagesContainerRef.current) {
+            const { scrollHeight, clientHeight } = messagesContainerRef.current;
+
+            // Hacemos el scroll suave para que se note la llegada de un nuevo mensaje.
+            // Esto funciona tanto al cargar el chat como al recibir nuevos mensajes.
+            messagesContainerRef.current.scrollTo({
+                top: scrollHeight - clientHeight,
+                behavior: 'smooth',
+            });
+        }
+    }, [messages, selectedChat]); // Se ejecuta cuando cambia el chat o cuando se actualizan los mensajes.
+    // --- FIN: Lógica para el scroll automático ---
 
     // Enviar un mensaje
     const handleSendMessage = async (text: string) => {
@@ -148,11 +167,16 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
     };
 
     return (
-        <div className="h-[calc(100vh-2rem)] max-w-[1400px] mx-auto bg-white rounded-2xl shadow-sm border border-slate-100 flex overflow-hidden">
+        // Eliminamos max-w-[1400px] y mx-auto para que ocupe todo el espacio disponible.
+        <div className="h-[calc(100vh-128px)] md:h-full bg-white rounded-2xl shadow-sm border border-slate-100 flex overflow-hidden"> {/* Mantenemos el fondo general blanco */}
 
+            {/* COLUMNA IZQUIERDA: Lista de chats 
+                - En móvil: Se oculta si hay un chat seleccionado (selectedChat es true).
+                - En escritorio (md): Siempre visible (w-1/3).
+            */}
             {/* Columna Izquierda: Lista de chats */}
-            <div className="w-1/3 bg-slate-50/50 border-r border-slate-100 flex flex-col">
-                <div className="p-6 border-b border-slate-100">
+            <div className={`w-full md:w-1/3 bg-slate-50 border-r border-slate-200 flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
+                <div className="p-6 border-b border-slate-200">
                     <h2 className="font-bold text-slate-900 text-lg">Mensajes</h2>
                 </div>
 
@@ -161,11 +185,11 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
                         <div
                             key={conv.id}
                             onClick={() => handleSelectChat(conv)}
-                            className={`p-5 border-b border-slate-100 cursor-pointer transition-all ${selectedChat?.id === conv.id ? 'bg-white border-l-4 border-l-blue-600' : 'hover:bg-white'
+                            className={`p-5 border-b border-slate-100/80 cursor-pointer transition-all ${selectedChat?.id === conv.id ? 'bg-white border-l-4 border-l-indigo-500' : 'hover:bg-slate-100'
                                 }`}
                         >
                             <div className="flex justify-between items-start mb-1">
-                                <span className="font-semibold text-slate-900 text-sm">{conv.lead.name}</span>
+                                <span className="font-semibold text-slate-800 text-sm">{conv.lead.name}</span>
                                 <span className="text-[10px] text-slate-400">{formatDate(conv.lastMessageAt)}</span>
                             </div>
                             <p className="text-xs text-slate-500 truncate">{conv.messages[0]?.messageText || 'Sin mensajes'}</p>
@@ -174,14 +198,30 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
                 </div>
             </div>
 
-            {/* Columna Derecha: Chat abierto */}
-            <div className="w-2/3 flex flex-col bg-slate-50/30">
+            {/* COLUMNA DERECHA: Chat abierto 
+                - En móvil: Se oculta si NO hay chat seleccionado.
+                - En escritorio (md): Siempre visible.
+            */}
+
+            <div className={`flex flex-col bg-slate-100/70 overflow-hidden 
+                w-full          // En móvil siempre ocupa el 100%
+                md:w-2/3        // En escritorio (md) ocupa el 66%
+                ${selectedChat ? 'flex' : 'hidden md:flex'} // Lógica de visibilidad
+            `}>
                 {selectedChat ? (
                     <>
                         {/* Header del Chat */}
                         <div className="px-6 py-4 bg-white border-b border-slate-100 flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center font-bold text-blue-600 text-xs">
+                                {/* Botón "Atrás" para móvil */}
+                                <button
+                                    onClick={() => setSelectedChat(null)}
+                                    className="md:hidden p-1 -ml-2 text-slate-600"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+
+                                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-600 text-xs">
                                     {selectedChat.lead.name.charAt(0)}
                                 </div>
                                 <span className="font-semibold text-slate-900">{selectedChat.lead.name}</span>
@@ -189,15 +229,18 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
                         </div>
 
                         {/* Area de Mensajes */}
-                        <div className="flex-1 overflow-y-auto p-8 space-y-4">
+                        <div
+                            ref={messagesContainerRef}
+                            className="flex-1 overflow-y-auto p-8 space-y-4"
+                        >
                             {messages.map((msg) => (
                                 <div
                                     key={msg.id}
                                     className={`flex ${msg.senderType === 'AGENT' ? 'justify-end' : 'justify-start'}`}
                                 >
-                                    <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm shadow-sm ${msg.senderType === 'AGENT'
-                                        ? 'bg-blue-600 text-white rounded-tr-none'
-                                        : 'bg-white text-slate-700 border border-slate-100 rounded-tl-none'
+                                    <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm shadow-md ${msg.senderType === 'AGENT'
+                                        ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-br-none'
+                                        : 'bg-white text-slate-700 border border-slate-200/80 rounded-bl-none'
                                         }`}>
                                         {msg.messageText}
                                     </div>
@@ -206,19 +249,19 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
                         </div>
 
                         {/* Input */}
-                        <div className="p-4 bg-white border-t border-slate-100">
+                        <div className="flex-none p-4 bg-white/80 backdrop-blur-sm border-t border-slate-200/80">
                             {/* Contenedor de la Sugerencia IA (si existe) */}
                             {aiResponse && (
-                                <div className="mb-3 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-start justify-between animate-in fade-in slide-in-from-bottom-2">
-                                    <div className="text-xs text-blue-800 font-medium">
+                                <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200/50 rounded-xl flex items-start justify-between animate-in fade-in slide-in-from-bottom-2">
+                                    <div className="text-xs text-indigo-900 font-medium">
                                         <span className="block font-bold mb-1">Sugerencia IA:</span>
                                         {aiResponse}
                                     </div>
                                     <div className="flex gap-1">
-                                        <button onClick={() => { setInputText(aiResponse); setAiResponse(null); }} className="text-blue-600 hover:text-blue-800 p-1">
+                                        <button onClick={() => { setInputText(aiResponse); setAiResponse(null); }} className="text-indigo-600 hover:text-indigo-800 p-1 font-bold">
                                             ✓
                                         </button>
-                                        <button onClick={() => setAiResponse(null)} className="text-slate-400 hover:text-red-500 p-1">
+                                        <button onClick={() => setAiResponse(null)} className="text-slate-400 hover:text-red-500 p-1 font-bold">
                                             ✕
                                         </button>
                                     </div>
@@ -231,13 +274,13 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
                                     type="button"
                                     disabled={isGenerating}
                                     onClick={suggestResponse}
-                                    title={isGenerating ? "Pensando..." : "Sugerir respuesta con IA"}
-                                    className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                    title="Sugerir respuesta con IA"
+                                    className="p-2.5 bg-indigo-50 text-indigo-400 hover:bg-indigo-100 hover:text-indigo-600 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isGenerating ? (
-                                        <div className="animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full" />
+                                        <div className="animate-spin h-5 w-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
                                     ) : (
-                                        <Bot size={20} />
+                                        <Sparkles size={20} />
                                     )}
                                 </button>
 
@@ -245,17 +288,18 @@ export default function ChatPage({ tenantId }: { tenantId: string }) {
                                     value={inputText}
                                     onChange={(e) => setInputText(e.target.value)}
                                     placeholder="Escribe un mensaje..."
-                                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 placeholder:text-slate-400"
+                                    className="flex-1 bg-slate-100 border border-slate-200/80 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 placeholder:text-slate-400"
                                 />
 
-                                <button type="submit" className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors">
+                                <button type="submit" className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors">
                                     Enviar
                                 </button>
                             </form>
                         </div>
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400 gap-2">
+                    /* Pantalla vacía (solo se ve en escritorio) */
+                    <div className="hidden md:flex flex-col items-center justify-center h-full text-slate-400 gap-2">
                         <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                             <Bot size={24} />
                         </div>
