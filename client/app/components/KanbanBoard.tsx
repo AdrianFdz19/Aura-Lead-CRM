@@ -99,54 +99,52 @@ export default function KanbanBoard({ tenantId }: { tenantId: string }) {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-50 p-6 overflow-x-auto">
-
-      {/* Encabezado del Tablero */}
+    <div className="w-full h-full bg-slate-50 p-4 md:p-6">
+      {/* Encabezado */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Pipeline Inmobiliario</h1>
-        <p className="text-sm text-slate-500">Gestiona tus leads y el seguimiento de propiedades en tiempo real.</p>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Pipeline</h1>
       </div>
 
-      {/* 3. GRID DEL TABLERO KANBAN */}
-      <DndContext collisionDetection={closestCorners} onDragEnd={onDragEnd} >
-        <div className="flex gap-4 min-w-[1000px] items-start">
+      {/* Contenedor del Tablero */}
+      <DndContext collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+        {/* CAMBIOS: 
+      - md:flex: Activa el flujo horizontal solo en escritorio.
+      - flex-col: En móvil apila las columnas verticalmente.
+      - min-w-0: Permite que el contenedor no fuerce un ancho mínimo roto.
+    */}
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start h-auto md:h-full w-full">
+
           {PIPELINE_STAGES.map((column) => {
-            // Ahora column.id ("nuevo") coincide perfectamente con la clave de boardData
             const columnLeads = leads.filter((l) => l.status === column.id);
 
             return (
               <div
                 key={column.id}
-                className="w-80 flex-shrink-0 bg-slate-100 rounded-xl p-3 border border-slate-200/60 shadow-sm"
+                // w-full: En móvil ocupa todo el ancho. md:w-80: En escritorio ancho fijo.
+                className="w-full md:w-80 flex-shrink-0 bg-slate-100 rounded-xl p-3 border border-slate-200/60 shadow-sm"
               >
-                {/* Encabezado de la Columna */}
+                {/* Header de columna */}
                 <div className="flex items-center justify-between mb-4 px-1">
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-4 rounded-full ${column.color}`} />
-                    <h3 className="font-semibold text-slate-700 text-sm">
-                      {column.label}
-                    </h3>
+                    <h3 className="font-semibold text-slate-700 text-sm">{column.label}</h3>
                   </div>
-                  <span className="text-xs bg-slate-200 text-slate-600 px-2.5 py-0.5 rounded-full font-bold">
-                    {columnLeads.length}
-                  </span>
+                  <span className="text-[10px] bg-slate-200 px-2 py-0.5 rounded-full font-bold">{columnLeads.length}</span>
                 </div>
 
                 {/* Contenedor de Tarjetas */}
-                <div className="space-y-3 min-h-[500px]">
+                <div className="space-y-3">
                   <DroppableColumn id={column.id}>
                     {columnLeads.length > 0 ? (
-                      columnLeads.map((lead) => (
-                        <LeadCard key={lead.id} lead={lead} />
-                      ))
+                      columnLeads.map((lead) => <LeadCard key={lead.id} lead={lead} />)
                     ) : (
-                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl h-32 text-slate-400 text-xs text-center p-4">
-                        <span>Sin leads en esta fase</span>
+                      // Solo mostramos esto si hay espacio, o podemos ocultarlo en móvil para ahorrar altura
+                      <div className="hidden md:flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl h-32 text-slate-400 text-xs text-center p-4">
+                        <span>Sin leads</span>
                       </div>
                     )}
                   </DroppableColumn>
                 </div>
-
               </div>
             );
           })}

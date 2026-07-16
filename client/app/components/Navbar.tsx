@@ -2,13 +2,13 @@
 "use client";
 import { useState } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, Building2, Users, Bot, BarChart3, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, Bot, BarChart3, Settings, ChevronLeft, ChevronRight, MessagesSquare } from 'lucide-react';
 
 const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Inventario', path: '/properties', icon: Building2 },
     { name: 'Leads', path: '/leads', icon: Users },
-    { name: 'Chats', path: '/chat', icon: Bot },
+    { name: 'Chats', path: '/chat', icon: MessagesSquare },
     { name: 'Reportes', path: '/reports', icon: BarChart3 },
 ];
 
