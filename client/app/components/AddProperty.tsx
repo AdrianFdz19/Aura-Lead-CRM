@@ -15,7 +15,7 @@ export default function AddProperty({ tenantId }: { tenantId: string }) {
         className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
       >
         <Plus size={16} />
-        Añadir Propiedad
+        Add Property
       </button>
 
       <Transition.Root show={isOpen} as={Fragment}>

@@ -33,42 +33,42 @@ export default function PropertyForm({ tenantId }: { tenantId: string }) {
           images: imageUrls,
         }),
       });
-      alert('Propiedad creada con éxito');
+      alert('Property created successfully');
     });
   }
 
   return (
     <form action={handleSubmit} className="p-8 bg-white rounded-2xl border border-gray-100 shadow-lg space-y-6 max-w-2xl mx-auto">
-      <h2 className="text-xl font-bold text-gray-800">Registrar Nueva Propiedad</h2>
+      <h2 className="text-xl font-bold text-gray-800">Register New Property</h2>
       
       <div className="grid grid-cols-2 gap-4">
-        <input name="title" placeholder="Título" className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 placeholder:text-gray-400" required />
+        <input name="title" placeholder="Title" className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 placeholder:text-gray-400" required />
         <select name="status" className="w-full p-3 border rounded-xl outline-none text-gray-800">
-          <option value="AVAILABLE">Disponible</option>
-          <option value="OCCUPIED">Ocupado</option>
-          <option value="PENDING">Pendiente</option>
+          <option value="AVAILABLE">Available</option>
+          <option value="OCCUPIED">Occupied</option>
+          <option value="PENDING">Pending</option>
         </select>
       </div>
 
-      <textarea name="description" placeholder="Descripción detallada..." className="w-full p-3 border rounded-xl h-24 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 placeholder:text-gray-400" required />
+      <textarea name="description" placeholder="Detailed description..." className="w-full p-3 border rounded-xl h-24 focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 placeholder:text-gray-400" required />
       
       <div className="grid grid-cols-2 gap-4">
-        <input name="price" type="number" placeholder="Precio" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" required />
-        <input name="commission" type="number" placeholder="Comisión" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" />
+        <input name="price" type="number" placeholder="Price" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" required />
+        <input name="commission" type="number" placeholder="Commission" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" />
       </div>
 
-      <input name="location" placeholder="Ubicación" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" required />
+      <input name="location" placeholder="Location" className="w-full p-3 border rounded-xl text-gray-800 placeholder:text-gray-400" required />
 
       <div className="border-2 border-dashed border-gray-200 p-6 rounded-2xl text-center hover:border-indigo-400 transition-colors">
         <input type="file" multiple accept="image/*" onChange={(e) => setFiles(Array.from(e.target.files || []))} className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700" />
-        <p className="text-xs text-gray-400 mt-2">Sube fotos de alta calidad</p>
+        <p className="text-xs text-gray-400 mt-2">Upload high-quality photos</p>
       </div>
 
       <button 
         disabled={isPending}
         className="w-full bg-indigo-600 text-white p-4 rounded-xl font-bold hover:bg-indigo-700 transition-all disabled:bg-gray-300"
       >
-        {isPending ? 'Indexando con IA...' : 'Guardar Propiedad'}
+        {isPending ? 'Indexing with AI...' : 'Save Property'}
       </button>
     </form>
   );
