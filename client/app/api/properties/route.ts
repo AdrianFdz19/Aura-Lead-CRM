@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
 import { propertyService } from '@/lib/propertyService';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   // 1. Obtener la sesión de forma segura
   const session = await getSession();
 
@@ -27,5 +27,14 @@ export async function POST(req: Request) {
     console.error("ERROR DETALLADO:", error.message);
     console.error("STACK:", error.stack);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// Search and filter properties
+export async function GET(req: NextRequest) {
+  const session = await getSession();
+
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 }

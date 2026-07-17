@@ -8,8 +8,7 @@ const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Inventario', path: '/properties', icon: Building2 },
     { name: 'Leads', path: '/leads', icon: Users },
-    { name: 'Chats', path: '/chat', icon: MessagesSquare },
-    { name: 'Reportes', path: '/reports', icon: BarChart3 },
+    { name: 'Chats', path: '/chat', icon: MessagesSquare }
 ];
 
 export default function Navbar() {

@@ -1,8 +1,11 @@
+"use client";
+
 import { Search, Briefcase, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { getSession } from "@/lib/auth";
 import { getPropertiesByTenant } from "@/lib/propertyService";
 import { getPublicUrl } from "@/lib/s3";
 import AddProperty from '@/app/components/AddProperty';
+import { PROPERTY_TYPES } from '@/app/constants/property';
 
 export default async function Dashboard() {
   const session = await getSession();
@@ -23,7 +26,7 @@ export default async function Dashboard() {
     <div className="w-full h-full bg-slate-50 p-4 md:p-6 space-y-6">
       {/* Encabezado */}
       <div className="mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Inventario de Propiedades</h1>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Property Inventory</h1>
       </div>
 
       {/* 1. MÉTRICAS SUPERIORES (KPI Cards Estilo Premium CRM) */}
@@ -31,28 +34,28 @@ export default async function Dashboard() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           {
-            label: 'Propiedades Activas',
+            label: 'Active Properties',
             value: properties.length.toString(),
             icon: <Briefcase className="w-5 h-5 text-blue-600" />,
             bg: 'border-blue-100 bg-blue-50/50',
             border: 'border-l-blue-500'
           },
           {
-            label: 'Solicitudes Pendientes',
+            label: 'Pending Requests',
             value: '45',
             icon: <Users className="w-5 h-5 text-purple-600" />,
             bg: 'border-purple-100 bg-purple-50/50',
             border: 'border-l-purple-500'
           },
           {
-            label: 'Tasa de Ocupación',
+            label: 'Occupancy Rate',
             value: '92%',
             icon: <TrendingUp className="w-5 h-5 text-amber-600" />,
             bg: 'border-amber-100 bg-amber-50/50',
             border: 'border-l-amber-500'
           },
           {
-            label: 'Comisión Estimada',
+            label: 'Estimated Commission',
             value: '$128,450',
             icon: <DollarSign className="w-5 h-5 text-emerald-600" />,
             bg: 'border-emerald-100 bg-emerald-50/50',
@@ -82,15 +85,15 @@ export default async function Dashboard() {
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
         <div className="p-6 border-b border-slate-50 flex justify-between items-center">
           <div>
-            <h2 className="font-bold text-lg text-slate-900">Tu Inventario</h2>
-            <p className="text-sm text-slate-500 mt-1">Gestiona todas tus propiedades en un solo lugar.</p>
+            <h2 className="font-bold text-lg text-slate-900">Your Inventory</h2>
+            <p className="text-sm text-slate-500 mt-1">Manage all your properties in one place.</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
               <input
                 className="pl-9 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 w-64"
-                placeholder="Buscar por nombre o ubicación..."
+                placeholder="Search by name or location..."
               />
             </div>
             {/* El nuevo componente para añadir propiedades */}
@@ -101,10 +104,13 @@ export default async function Dashboard() {
         <table className="w-full text-sm">
           <thead className="text-slate-400 uppercase text-[10px] tracking-widest font-bold bg-slate-50/50">
             <tr>
-              <th className="px-6 py-4 text-left">Propiedad</th>
-              <th className="px-6 py-4 text-left">Estatus</th>
-              <th className="px-6 py-4 text-left">Precio</th>
-              <th className="px-6 py-4 text-right">Acciones</th>
+              <th className="px-6 py-4 text-left">Property</th>
+              <th className="px-6 py-4 text-left">Status</th>
+              <th className="px-6 py-4 text-left">Price</th>
+              <th className="px-6 py-4 text-left">Type</th>
+              <th className="px-6 py-4 text-left">Location</th>
+              <th className="px-6 py-4 text-left">Commission</th>
+              <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -119,13 +125,28 @@ export default async function Dashboard() {
                 </td>
                 <td className="px-6 py-4">
                   <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
-                    Activa
+                    Active
                   </span>
                 </td>
                 <td className="px-6 py-4 font-medium text-slate-700">${p.price.toLocaleString()}</td>
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
+                    { PROPERTY_TYPES.HOUSE }
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
+                    Av. 5 Street.
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
+                    5000
+                  </span>
+                </td>
                 <td className="px-6 py-4 text-right">
                   <button className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
-                    Ver Detalles
+                    View Details
                   </button>
                 </td>
               </tr>
