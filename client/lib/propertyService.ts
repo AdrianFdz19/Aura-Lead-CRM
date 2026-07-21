@@ -16,6 +16,7 @@ export const propertyService = {
     tenantId: string;
     title: string;
     description: string;
+    type: string;
     price: number;
     location: string;
     images: string[];
@@ -30,12 +31,13 @@ export const propertyService = {
     // 2. Guardamos en la base de datos
     return await prisma.$executeRaw`
     INSERT INTO "properties" 
-    ("id", "title", "description", "price", "location", "tenant_id", "images", "embedding", "status", "commission", "leads")
+    ("id", "title", "description", "price", "type", "location", "tenant_id", "images", "embedding", "status", "commission", "leads")
     VALUES (
       gen_random_uuid(), 
       ${data.title}, 
       ${data.description}, 
       ${data.price}::decimal, 
+      ${data.type}, 
       ${data.location}, 
       ${data.tenantId}::uuid, 
       ${data.images}, 
