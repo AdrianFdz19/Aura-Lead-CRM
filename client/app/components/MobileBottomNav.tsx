@@ -1,10 +1,11 @@
-import { HomeIcon, LayoutDashboard, Building2, Users, Bot, BarChart3, Settings, ChevronLeft, ChevronRight, MessagesSquare } from 'lucide-react';
+import { HomeIcon, LayoutDashboard, Building2, Users, Bot, BarChart3, Settings, ChevronLeft, ChevronRight, MessagesSquare, ShieldUser } from 'lucide-react';
 import Link from 'next/link';
 
 const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Inventario', path: '/properties', icon: Building2 },
     { name: 'Leads', path: '/leads', icon: Users },
+    { name: 'Team', path: '/team', icon: ShieldUser },
     { name: 'Chats', path: '/chat', icon: MessagesSquare }
 ];
 
