@@ -46,6 +46,7 @@ export async function GET(request: Request) {
   const search = searchParams.get('search') || '';
   const status = searchParams.get('status');
   const type = searchParams.get('type');
+  const sortPrice = searchParams.get('sortPrice') || 'desc';
   // Puedes añadir más filtros aquí...
 
   try {
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
         tenantId: tenantId,
         // Filtros dinámicos
         ...(status && { status: status as any }),
-        ...(type && { type: type }),
+        ...(type && { type: type as any }),
         // Búsqueda por texto en múltiples campos
         ...(search && {
           OR: [
@@ -64,17 +65,24 @@ export async function GET(request: Request) {
           ],
         }),
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { price: sortPrice as 'asc' | 'desc' },
+        { createdAt: 'desc' }
+      ],
     });
 
-    // Procesamos las URLs en el SERVIDOR
+    // Procesamos todas las imágenes de cada propiedad en paralelo
     const propertiesWithImages = await Promise.all(
-      properties.map(async (p) => ({
-        ...p,
-        imageUrl: p.images && p.images.length > 0
-          ? await getPublicUrl(p.images[0])
-          : '/placeholder.jpg'
-      }))
+      properties.map(async (p) => {
+        const images = p.images && p.images.length > 0
+          ? await Promise.all(p.images.map((imgKey) => getPublicUrl(imgKey)))
+          : ['/placeholder.jpg'];
+
+        return {
+          ...p,
+          images, // Reemplazamos o añadimos el arreglo completo con las URLs públicas firmadas
+        };
+      })
     );
 
     return NextResponse.json(propertiesWithImages);
