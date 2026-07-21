@@ -12,9 +12,11 @@ export type PropertyType = {
     tenantId: string;
     createdAt: string;
 
+    imageKeys?: string[];
+
     // agregar los siguientes en la tabla
     leads?: number;
-    type?: 'house' | 'apartment' | 'land'
+    type?: 'HOUSE' | 'APARTMENT' | 'LAND'
 
     // a eliminar 
     imageUrl?: string;
