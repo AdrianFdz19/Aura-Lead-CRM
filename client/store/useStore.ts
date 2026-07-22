@@ -1,26 +1,42 @@
 import { create } from 'zustand';
 import { Lead } from '@/app/types/lead';
 import { Message } from '@/app/types/chat';
+import { User } from '@/app/types/user';
+
+// --- INICIO: Datos simulados (Mocks) ---
+const mockTeam: User[] = [
+  { id: 'user_agent_1', name: 'Elena', email: 'elena@example.com', role: 'AGENT', isActive: true },
+  { id: 'user_agent_2', name: 'Marcos', email: 'marcos@example.com', role: 'AGENT', isActive: true },
+  { id: 'user_admin_1', name: 'Admin', email: 'admin@example.com', role: 'ADMIN', isActive: true },
+];
+// --- FIN: Datos simulados (Mocks) ---
 
 // 1. Definimos el estado inicial para poder reutilizarlo
 const initialState = {
   leads: [],
   messages: {},
   conversations: [],
+  // Asignamos los mocks al estado inicial
+  currentUser: undefined, // Lo inicializamos como undefined, se hidratará al cargar
+  team: [], // El equipo también se puede cargar desde la API
 };
 
 interface AppStore {
   leads: Lead[];
   messages: Record<string, Message[]>;
   conversations: any[];
+  currentUser?: User;
+  team: User[];
 
   // Acciones
   setLeads: (leads: Lead[]) => void;
   setMessages: (conversationId: string, msgs: Message[]) => void;
   setConversations: (convs: any[]) => void;
+  setCurrentUser: (user: User) => void;
   handleIncomingMessage: (payload: { message: Message, conversation: any, lead: any }) => void;
   replaceTempMessage: (conversationId: string, tempId: string, finalMessage: Message) => void;
   updateLeadStatus: (leadId: string, newStatus: string) => void;
+  assignAgentToLead: (leadId: string, agentId: string) => void;
   removeLead: (leadId: string) => void;
 
   // NUEVA ACCIÓN DE LIMPIEZA
@@ -35,6 +51,9 @@ export const useStore = create<AppStore>((set) => ({
   setMessages: (conversationId, msgs) => set((state) => ({
     messages: { ...state.messages, [conversationId]: msgs }
   })),
+
+  // Nueva acción para hidratar el usuario
+  setCurrentUser: (user) => set({ currentUser: user }),
 
   // Acción de reseteo: vuelve todo a los valores definidos en initialState
   reset: () => set(initialState),
@@ -100,6 +119,25 @@ export const useStore = create<AppStore>((set) => ({
       method: 'PATCH',
       body: JSON.stringify({ status: newStatus }),
     });
+  },
+
+  // Asignar un agente a un Lead
+  assignAgentToLead: (leadId, agentId) => {
+    set((state) => {
+      const agentToAssign = state.team.find(agent => agent.id === agentId);
+      if (!agentToAssign) return state; // No hacer nada si el agente no existe
+
+      const updatedLeads = state.leads.map(lead =>
+        lead.id === leadId ? { ...lead, agent: agentToAssign } : lead
+      );
+      return { leads: updatedLeads };
+    });
+
+    // Aquí iría la llamada a la API en el futuro
+    // fetch(`/api/leads/${leadId}/assign`, {
+    //   method: 'PATCH',
+    //   body: JSON.stringify({ agentId }),
+    // });
   },
 
   replaceTempMessage: (conversationId, tempId, finalMessage) => set((state) => {

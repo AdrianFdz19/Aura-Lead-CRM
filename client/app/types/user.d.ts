@@ -5,6 +5,7 @@ export type User = {
     name: string;
     email: string;
     phone?: string;
-    role: 'ADMIN' | 'AGENT',
-    tenantId: string;
+    role: 'ADMIN' | 'AGENT';
+    tenantId?: string;
+    isActive: boolean;
 }

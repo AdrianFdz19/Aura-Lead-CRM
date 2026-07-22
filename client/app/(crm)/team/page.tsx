@@ -49,7 +49,7 @@ export default function TeamPage() {
         member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const memberRoleFormatted = member.role === 'ADMIN' ? 'Admin' : 'Sales Agent';
+      const memberRoleFormatted = member.role === 'ADMIN' ? 'ADMIN' : 'AGENT';
       const roleMatch = roleFilter === 'All' || memberRoleFormatted === roleFilter;
       
       const memberStatusFormatted = member.isActive ? 'Active' : 'Inactive';
