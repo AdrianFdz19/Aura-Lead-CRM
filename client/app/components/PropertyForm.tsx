@@ -13,7 +13,10 @@ export default function PropertyForm({ tenantId }: { tenantId: string }) {
       for (const file of files) {
         const { uploadUrl, fileKey } = await fetch('/api/upload-url', {
           method: 'POST',
-          body: JSON.stringify({ fileType: file.type }),
+          body: JSON.stringify({ 
+            fileType: file.type,
+            folder: 'properties' 
+          }),
         }).then(r => r.json());
 
         await fetch(uploadUrl, { method: 'PUT', body: file });
