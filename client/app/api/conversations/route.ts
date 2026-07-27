@@ -12,11 +12,21 @@ export async function GET() {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   }
 
+  // 1. Construir el 'where' base para el tenant
+  const whereCondition: any = {
+    tenantId: session.tenantId,
+  };
+
+  // 2. Si es agente, filtramos las conversaciones cuyo lead asociado esté asignado a este usuario
+  if (session.role === 'AGENT') {
+    whereCondition.lead = {
+      assignedToId: session.userId,
+    };
+  }
+
   // Obtenemos todas las conversaciones, incluyendo el lead y los mensajes (ordenados para traer el último)
   const conversations = await prisma.conversation.findMany({
-    where: {
-      tenantId: session.tenantId,
-    },
+    where: whereCondition,
     orderBy: { lastMessageAt: 'desc' }, // Las más recientes primero
     include: {
       lead: {

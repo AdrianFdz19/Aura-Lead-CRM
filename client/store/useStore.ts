@@ -1,22 +1,13 @@
 import { create } from 'zustand';
 import { Lead } from '@/app/types/lead';
 import { Message } from '@/app/types/chat';
-import { User } from '@/app/types/user';
-
-// --- INICIO: Datos simulados (Mocks) ---
-const mockTeam: User[] = [
-  { id: 'user_agent_1', name: 'Elena', email: 'elena@example.com', role: 'AGENT', isActive: true },
-  { id: 'user_agent_2', name: 'Marcos', email: 'marcos@example.com', role: 'AGENT', isActive: true },
-  { id: 'user_admin_1', name: 'Admin', email: 'admin@example.com', role: 'ADMIN', isActive: true },
-];
-// --- FIN: Datos simulados (Mocks) ---
+import { User, TeamUser } from '@/app/types/user';
 
 // 1. Definimos el estado inicial para poder reutilizarlo
 const initialState = {
   leads: [],
   messages: {},
   conversations: [],
-  // Asignamos los mocks al estado inicial
   currentUser: undefined, // Lo inicializamos como undefined, se hidratará al cargar
   team: [], // El equipo también se puede cargar desde la API
 };
@@ -26,15 +17,22 @@ interface AppStore {
   messages: Record<string, Message[]>;
   conversations: any[];
   currentUser?: User;
-  team: User[];
+  team: TeamUser[];
 
   // Acciones
   setLeads: (leads: Lead[]) => void;
   setMessages: (conversationId: string, msgs: Message[]) => void;
+
   setConversations: (convs: any[]) => void;
   setCurrentUser: (user: User) => void;
+  setInitialTeam: ( initialTeam: TeamUser[] ) => void;
+  removeAgent: (agentId: string) => void;
+  addAgent: (newAgent: TeamUser) => void;
+  updateAgent: (updatedAgent: TeamUser) => void;
+
   handleIncomingMessage: (payload: { message: Message, conversation: any, lead: any }) => void;
   replaceTempMessage: (conversationId: string, tempId: string, finalMessage: Message) => void;
+
   updateLeadStatus: (leadId: string, newStatus: string) => void;
   assignAgentToLead: (leadId: string, agentId: string) => void;
   removeLead: (leadId: string) => void;
@@ -54,6 +52,22 @@ export const useStore = create<AppStore>((set) => ({
 
   // Nueva acción para hidratar el usuario
   setCurrentUser: (user) => set({ currentUser: user }),
+
+  setInitialTeam: (initialTeam) => set({ team: initialTeam }),
+
+  removeAgent: (agentId) => set((state) => ({
+    team: state.team.filter((member) => member.id !== agentId)
+  })),
+
+  // Acción para añadir un nuevo agente al principio de la lista
+  addAgent: (newAgent) => set((state) => ({
+    team: [newAgent, ...state.team]
+  })),
+
+  // Acción para actualizar un agente existente en la lista
+  updateAgent: (updatedAgent) => set((state) => ({
+    team: state.team.map((member) => member.id === updatedAgent.id ? updatedAgent : member)
+  })),
 
   // Acción de reseteo: vuelve todo a los valores definidos en initialState
   reset: () => set(initialState),
@@ -121,23 +135,21 @@ export const useStore = create<AppStore>((set) => ({
     });
   },
 
-  // Asignar un agente a un Lead
+  // Asignar un agente a un Lead usando assignedToId
   assignAgentToLead: (leadId, agentId) => {
     set((state) => {
-      const agentToAssign = state.team.find(agent => agent.id === agentId);
-      if (!agentToAssign) return state; // No hacer nada si el agente no existe
-
       const updatedLeads = state.leads.map(lead =>
-        lead.id === leadId ? { ...lead, agent: agentToAssign } : lead
+        lead.id === leadId ? { ...lead, assignedToId: agentId } : lead
       );
       return { leads: updatedLeads };
     });
 
-    // Aquí iría la llamada a la API en el futuro
-    // fetch(`/api/leads/${leadId}/assign`, {
-    //   method: 'PATCH',
-    //   body: JSON.stringify({ agentId }),
-    // });
+    // Llamada al backend utilizando la columna correcta
+    fetch(`/api/leads/${leadId}/assign`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assignedToId: agentId }),
+    });
   },
 
   replaceTempMessage: (conversationId, tempId, finalMessage) => set((state) => {

@@ -8,5 +8,5 @@ export interface Lead {
   email?: string | null;
   lastMessage: string; 
   priority: 'hot' | 'warm' | 'cold'; 
-  AssignedToId?: string;
+  assignedToId?: string;
 }
