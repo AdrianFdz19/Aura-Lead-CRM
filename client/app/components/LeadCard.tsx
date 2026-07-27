@@ -1,16 +1,15 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Phone, Mail, MoreHorizontal, UserPlus } from 'lucide-react';
+import { MoreHorizontal, UserPlus, ChevronLeft, Check } from 'lucide-react';
 import { Lead } from '../types/lead';
-import { useSortable } from '@dnd-kit/sortable'; // 1. Importa el hook
-import { CSS } from '@dnd-kit/utilities'; // 2. Importa para el estilo
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { useStore } from '@/store/useStore';
 import { getInitials } from '../utils/getInitials';
 
 export type LeadPriority = 'hot' | 'warm' | 'cold';
 
-// Props del componente principal
 interface LeadCardProps {
   lead: Lead;
 }
@@ -43,15 +42,19 @@ interface DropdownMenuProps {
 function DropdownMenu({ leadId }: DropdownMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [showAgentSubmenu, setShowAgentSubmenu] = useState(false);
   const currentUser = useStore(state => state.currentUser);
   const team = useStore(state => state.team);
   const assignAgentToLead = useStore(state => state.assignAgentToLead);
 
-  // Cerrar menú al hacer clic fuera
+  // Buscamos el lead actual en el store usando el leadId
+  const lead = useStore(state => state.leads.find(l => l.id === leadId));
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setShowAgentSubmenu(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -61,27 +64,85 @@ function DropdownMenu({ leadId }: DropdownMenuProps) {
   const handleAssignAgent = (agentId: string) => {
     assignAgentToLead(leadId, agentId);
     setIsOpen(false);
+    setShowAgentSubmenu(false);
   };
 
   return (
     <div className="relative" ref={menuRef}>
-      <button onClick={() => setIsOpen(!isOpen)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors">
+      <button
+        onClick={() => {
+          setIsOpen(!isOpen);
+          setShowAgentSubmenu(false);
+        }}
+        className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-md transition-colors">
         <MoreHorizontal size={16} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-20 animate-in fade-in zoom-in-95 duration-200">
-          {currentUser?.role === 'ADMIN' && (
-            <div className="relative group">
-              <div className="flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700">
-                <UserPlus size={16} /> Asignar a un agente
+        <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 z-20 animate-in fade-in zoom-in-95">
+          {showAgentSubmenu ? (
+            <div>
+              <div className="flex items-center border-b border-slate-100 mb-1">
+                <button
+                  onClick={() => setShowAgentSubmenu(false)}
+                  className="p-2 text-slate-500 hover:bg-slate-100 rounded-full m-1"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  Asignar Agente
+                </h4>
               </div>
-              <div className="absolute left-full top-0 mt-[-8px] w-56 bg-white rounded-xl shadow-xl border border-slate-100 py-2 hidden group-hover:block">
-                {team.map(agent => (
-                  <button key={agent.id} onClick={() => handleAssignAgent(agent.id)} className="flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">{agent.name}</button>
-                ))}
+              <div className="max-h-48 overflow-y-auto">
+                {team && team.length > 0 ? (
+                  team.map((agent) => {
+                    // Ojo: Asegúrate de usar la propiedad en minúsculas/camelCase que maneje tu tipo Lead (asignado como assignedToId)
+                    const isAssigned = lead?.assignedToId === agent.id;
+                    return (
+                      <button
+                        key={agent.id}
+                        onClick={() => handleAssignAgent(agent.id)}
+                        className={`flex items-center justify-between w-full px-3 py-2 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors ${isAssigned ? 'bg-indigo-50 font-semibold text-indigo-700' : ''}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {agent.avatar ? (
+                            <img src={agent.avatar} alt={agent.name} className="w-6 h-6 rounded-full object-cover" />
+                          ) : (
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border ${getAvatarColor(agent.name)}`}>
+                              {getInitials(agent.name)}
+                            </div>
+                          )}
+                          <span className="truncate">{agent.name}</span>
+                        </div>
+                        {isAssigned && (
+                          <Check size={16} className="text-indigo-600" />
+                        )}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="px-3 py-2 text-xs text-slate-400 text-center">
+                    No hay agentes disponibles
+                  </div>
+                )}
               </div>
             </div>
+          ) : (
+            <>
+              {currentUser?.role === 'ADMIN' ? (
+                <button
+                  onClick={() => setShowAgentSubmenu(true)}
+                  className="flex items-center gap-3 w-full px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  <UserPlus size={16} className="text-slate-500" />
+                  <span>Asignar agente</span>
+                </button>
+              ) : (
+                <div className="px-4 py-2 text-xs text-slate-400 italic text-center">
+                  Solo administradores pueden asignar.
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -103,23 +164,18 @@ export default function LeadCard({ lead }: LeadCardProps) {
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1, // Feedback visual al arrastrar
+    opacity: isDragging ? 0.5 : 1,
   };
-  // 1. Validar la prioridad de forma segura (Backend a veces envía 'HOT' o string genérico)
+
   const rawPriority = (lead.priority?.toLowerCase() || 'warm') as LeadPriority;
   const currentPriority = priorityColors[rawPriority] || priorityColors.warm;
 
-  const [agentAssigned, setAgentAssigned] = useState<any>();
+  // 1. Obtenemos el usuario actual y la lista del equipo desde Zustand
+  const currentUser = useStore(state => state.currentUser);
+  const team = useStore(state => state.team);
 
-  // Info del agente asignado si es que tiene uno
-  useEffect(() => {
-    if (lead.AssignedToId) {
-      setAgentAssigned({
-        id: '01',
-        name: 'Adrian Ruiz'
-      });
-    }
-  }, []);
+  // 2. Buscamos al agente asignado comparando el ID del lead con la lista del store
+  const assignedAgent = team.find(agent => agent.id === lead.assignedToId);
 
   return (
     <div
@@ -129,14 +185,13 @@ export default function LeadCard({ lead }: LeadCardProps) {
         zIndex: isDragging ? 50 : 1,
         pointerEvents: isDragging ? 'none' : 'auto'
       }}
-      {...attributes}
-      {...listeners}
       className={`w-full bg-white rounded-xl shadow-sm border-l-4 border-y border-r border-slate-200 p-4 hover:shadow-md transition-all cursor-grab ${currentPriority.borderLeft}`}
     >
-
       {/* 1. Header con Iniciales y Badge de Prioridad */}
-      <div className="flex items-center gap-3 mb-3">
-        {/* Avatar dinámico */}
+      <div
+        {...listeners}
+        className="flex items-center gap-3 mb-3"
+      >
         <div className={`relative w-9 h-9 min-w-9 rounded-full flex items-center justify-center text-xs font-bold border ${getAvatarColor(lead.name)}`}>
           {getInitials(lead.name)}
         </div>
@@ -161,20 +216,31 @@ export default function LeadCard({ lead }: LeadCardProps) {
       {/* 3. Acciones de contacto directo */}
       <div className="flex items-center justify-between pt-1 border-t border-slate-100">
         <div className="flex items-center gap-2">
-          {/* Avatar del agente asignado */}
-          {agentAssigned && (
-            <div
-              className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white ${getAvatarColor('Adrian Ruiz')}`}
-              title={`Asignado a: nombre-agente`}
-            >
-              {getInitials('Adrian Ruiz')}
+          {/* Mostramos el avatar del agente asignado ÚNICAMENTE si el usuario actual es ADMIN y el lead tiene agente */}
+          {currentUser?.role === 'ADMIN' && assignedAgent && (
+            <div className="flex items-center gap-1.5">
+              {assignedAgent.avatar ? (
+                <img 
+                  src={assignedAgent.avatar} 
+                  alt={assignedAgent.name} 
+                  className="w-6 h-6 rounded-full object-cover border-2 border-white shadow-sm"
+                  title={`Asignado a: ${assignedAgent.name}`}
+                />
+              ) : (
+                <div 
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white shadow-sm ${getAvatarColor(assignedAgent.name)}`}
+                  title={`Asignado a: ${assignedAgent.name}`}
+                >
+                  {getInitials(assignedAgent.name)}
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Menú de acciones */}
         <div className="flex items-center">
-          <DropdownMenu leadId={'01'} />
+          <DropdownMenu leadId={lead.id} />
         </div>
       </div>
     </div>

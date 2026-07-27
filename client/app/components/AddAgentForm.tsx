@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import { Image as ImageIcon } from 'lucide-react';
+import { useStore } from '@/store/useStore';
 
 interface AddAgentFormProps {
     onClose: () => void;
 }
 
+import { TeamUser } from '@/app/types/user';
 export default function AddAgentForm({ onClose }: AddAgentFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const addAgent = useStore((state) => state.addAgent);
+    const updateAgent = useStore((state) => state.updateAgent);
 
     // Manejar la selección de la imagen de perfil y su vista previa
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,81 +26,87 @@ export default function AddAgentForm({ onClose }: AddAgentFormProps) {
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+        e.preventDefault();
+        setIsSubmitting(true);
 
-    try {
-        // 1. Recopilar los datos del formulario usando FormData
-        const formData = new FormData(e.currentTarget);
+        try {
+            // 1. Recopilar los datos del formulario usando FormData
+            const formData = new FormData(e.currentTarget);
 
-        const agentData = {
-            name: formData.get('name'),
-            email: formData.get('email'),
-            phone: formData.get('phone'),
-            role: formData.get('role'),
-            status: formData.get('status'),
-        };
+            const agentData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                role: formData.get('role'),
+                status: formData.get('status'),
+            };
 
-        // 2. Crear el registro del usuario primero para obtener su ID
-        const res = await fetch(`/api/users`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({agentData})
-        });
+            // 2. Crear el registro del usuario primero para obtener su ID
+            const res = await fetch(`/api/users`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agentData })
+            });
 
-        if (res.ok) {
-            const newUserData = await res.json();
-            const { id: userId } = newUserData;
+            if (res.ok) {
+                const newUserData: TeamUser = await res.json();
+                const { id: userId } = newUserData; // Obtenemos el ID del nuevo usuario
 
-            // 3. Si existe una imagen, pedir URL firmada, subirla a S3 y actualizar el usuario
-            if (selectedFile) {
-                const uploadRes = await fetch('/api/upload-url', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fileType: selectedFile.type,
-                        folder: `users/avatars/${userId}`
-                    }),
-                });
+                // 3. Actualización optimista: Añadimos el agente al store inmediatamente
+                // La UI se actualiza mostrando el nuevo agente (sin avatar aún)
+                addAgent(newUserData);
 
-                if (uploadRes.ok) {
-                    const { uploadUrl, fileKey } = await uploadRes.json();
-
-                    // Subir el archivo binario a S3
-                    await fetch(uploadUrl, { 
-                        method: 'PUT', 
-                        body: selectedFile 
-                    });
-
-                    // 4. Actualizar el registro del usuario con la key de la imagen
-                    await fetch(`/api/users/${userId}`, {
-                        method: 'PATCH',
+                if (selectedFile) {
+                    // 4. Si hay imagen, la subimos y actualizamos el registro del usuario
+                    const uploadRes = await fetch('/api/upload-url', {
+                        method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            avatar: fileKey
-                        })
+                            fileType: selectedFile.type,
+                            folder: `users/avatars/${userId}`
+                        }),
                     });
-                }
 
-                // Mover onClose() aquí para asegurar que solo se cierre si todo fue exitoso
+                    if (uploadRes.ok) {
+                        const { uploadUrl, fileKey } = await uploadRes.json();
+
+                        // Subir el archivo binario a S3
+                        await fetch(uploadUrl, {
+                            method: 'PUT',
+                            body: selectedFile
+                        });
+
+                        // 4. Actualizar el registro del usuario con la key de la imagen
+                        const patchRes = await fetch(`/api/users/${userId}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                avatar: fileKey
+                            })
+                        });
+
+                        if (patchRes.ok) {
+                            const finalUserData: TeamUser = await patchRes.json();
+                            // 5. Reemplazamos el agente en el store con la versión final que incluye el avatar
+                            updateAgent(finalUserData);
+                        }
+                    }
+                }
+                // Cerramos el modal independientemente de si hubo imagen o no, ya que el usuario fue creado.
                 onClose();
             } else {
-                // Si no hay archivo, el proceso termina aquí y es exitoso.
-                onClose();
+                // Si la creación inicial del usuario falla, notificamos el error.
+                const errorData = await res.json();
+                alert(`Error creating agent: ${errorData.error || 'Please try again.'}`);
             }
-        } else {
-            // Si la creación inicial del usuario falla, notificar al usuario.
-            const errorData = await res.json();
-            alert(`Error creating agent: ${errorData.error || 'Please try again.'}`);
-        }
 
-    } catch (error) {
-        console.error(`Server error: `, error);
-        alert('An unexpected server error occurred. Please try again later.');
-    } finally {
-        setIsSubmitting(false);
-    }
-};
+        } catch (error) {
+            console.error(`Server error: `, error);
+            alert('An unexpected server error occurred. Please try again later.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">

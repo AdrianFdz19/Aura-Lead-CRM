@@ -7,21 +7,23 @@ import Navbar from "./Navbar";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import MobileBottomNav from "./MobileBottomNav";
 import { useStore } from "@/store/useStore";
-import { User } from "../types/user";
+import { User, TeamUser } from "../types/user";
 
-export default function ClientLayoutWrapper({ children, user }: { children: React.ReactNode, user: User | null }) {
+export default function ClientLayoutWrapper({ children, user, initialTeam }: { children: React.ReactNode, user: User | null, initialTeam: TeamUser[] }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { setCurrentUser } = useStore();
+  const { setCurrentUser, setInitialTeam } = useStore();
   const initialized = useRef(false);
 
   // Usamos useEffect para hidratar el store solo una vez en el cliente
   useEffect(() => {
     if (user && !initialized.current) {
       setCurrentUser(user);
+      setInitialTeam(initialTeam);
       initialized.current = true; // Marcamos como inicializado
     }
-  }, [user, setCurrentUser]);
+
+  }, [user, initialTeam]);
 
   return (
     // 1. Grid modificado:

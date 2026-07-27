@@ -1,36 +1,23 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { UserPlus, Mail, Phone, MoreVertical, Shield, User, CheckCircle, Search, Edit, UserX, Activity } from 'lucide-react';
 import AddAgentForm from '@/app/components/AddAgentForm';
+import { useStore } from '@/store/useStore';
+import { TeamUser } from '@/app/types/user';
 
 export default function TeamPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
-  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isAddAgentModalOpen, setIsAddAgentModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Función para recargar la lista de usuarios tras un registro exitoso
-  const fetchUsers = async () => {
-    try {
-      const res = await fetch(`/api/users`);
-      if (res.ok) {
-        const data = await res.json();
-        console.log(data);
-        setTeamMembers(data);
-      }
-    } catch (err) {
-      console.error(`Server error:`, err);
-    }
-  };
-
-  // Traer la lista de los usuarios al montar el componente
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // 1. Obtenemos el equipo, el usuario actual y la acción para eliminar del store
+  const team: TeamUser[] = useStore((state) => state.team);
+  const currentUser = useStore((state) => state.currentUser);
+  const removeAgentFromStore = useStore((state) => state.removeAgent);
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -44,7 +31,7 @@ export default function TeamPage() {
   }, []);
 
   const filteredMembers = useMemo(() => {
-    return teamMembers.filter(member => {
+    return team.filter(member => {
       const searchMatch = searchTerm === '' ||
         member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -57,11 +44,37 @@ export default function TeamPage() {
 
       return searchMatch && roleMatch && statusMatch;
     });
-  }, [teamMembers, searchTerm, roleFilter, statusFilter]);
+  }, [team, searchTerm, roleFilter, statusFilter]);
 
   const toggleMenu = (memberId: string) => {
     setOpenMenuId(openMenuId === memberId ? null : memberId);
   };
+
+  // Eliminar a un agente del equipo
+  const deleteAgent = useCallback(async (agentId: string) => {
+    // Confirmación para evitar borrados accidentales
+    if (!window.confirm("¿Estás seguro de que quieres eliminar a este agente? Esta acción es irreversible y liberará sus leads asignados.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/users/${agentId}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        // 2. Si la API responde con éxito, eliminamos el agente del estado local
+        removeAgentFromStore(agentId);
+        setOpenMenuId(null); // Cerramos el menú
+      } else {
+        const errorData = await res.json();
+        alert(`Error al eliminar el agente: ${errorData.error || 'Inténtalo de nuevo.'}`);
+      }
+    } catch (err) {
+      console.error("Error de red o de cliente:", err);
+      alert("Ocurrió un error de conexión. Por favor, inténtalo de nuevo.");
+    }
+  }, [removeAgentFromStore]);
 
   return (
     <div className="max-w-[1400px] mx-auto p-6 space-y-6">
@@ -99,8 +112,8 @@ export default function TeamPage() {
             className="w-full md:w-auto bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2.5 text-sm text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none"
           >
             <option value="All">All Roles</option>
-            <option value="Admin">Admin</option>
-            <option value="Sales Agent">Sales Agent</option>
+            <option value="ADMIN">Admin</option>
+            <option value="AGENT">Sales Agent</option>
           </select>
           <select
             value={statusFilter}
@@ -154,9 +167,20 @@ export default function TeamPage() {
                           <Activity size={16} /> View Activity
                         </button>
                         <div className="border-t my-1" />
-                        <button className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                          <UserX size={16} /> Deactivate
-                        </button>
+                        {/* 3. Lógica de renderizado condicional para el botón de eliminar */}
+                        {currentUser?.role === 'ADMIN' && (
+                          <button
+                            onClick={() => deleteAgent(member.id)}
+                            disabled={currentUser.id === member.id} // Deshabilitado para el propio admin
+                            className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                            title={currentUser.id === member.id ? "No puedes eliminar tu propia cuenta" : "Eliminar agente"}
+                          >
+                            <UserX size={16} />
+                            <span>
+                              {currentUser.id === member.id ? 'Cannot Delete Self' : 'Delete Agent'}
+                            </span>
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -187,7 +211,7 @@ export default function TeamPage() {
                 <div className="flex justify-around text-center">
                   <div>
                     <p className="text-xs text-slate-500">Leads</p>
-                    <p className="font-bold text-slate-700 text-lg">{member.assignedLeads?.length || 0}</p>
+                    <p className="font-bold text-slate-700 text-lg">{member.leadsCount || 0}</p>
                   </div>
                   <div>
                     <p className="text-xs text-slate-500">Closed</p>
@@ -226,7 +250,6 @@ export default function TeamPage() {
             <AddAgentForm 
               onClose={() => {
                 setIsAddAgentModalOpen(false);
-                fetchUsers(); // Recarga la lista automáticamente al cerrar tras un alta exitosa
               }} 
             />
 

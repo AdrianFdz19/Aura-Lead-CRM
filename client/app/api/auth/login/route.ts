@@ -29,6 +29,7 @@ export async function POST(req: Request) {
     const token = await new SignJWT({ 
       userId: user.id, 
       tenantId: user.tenantId,
+      role: user.role,
       status: user.tenant.subscription?.status || 'pending_payment'
     })
       .setProtectedHeader({ alg: 'HS256' })
