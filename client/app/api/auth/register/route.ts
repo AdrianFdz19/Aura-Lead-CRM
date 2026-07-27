@@ -67,7 +67,7 @@ export async function POST(req: Request) {
         });
 
         const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-        const token = await new SignJWT({ userId: newUser.id, tenantId: newUser.tenantId, status: 'pending_payment' })
+        const token = await new SignJWT({ userId: newUser.id, tenantId: newUser.tenantId, role: newUser.role, status: 'pending_payment' })
             .setProtectedHeader({ alg: 'HS256' })
             .setIssuedAt()
             .setExpirationTime('7d')

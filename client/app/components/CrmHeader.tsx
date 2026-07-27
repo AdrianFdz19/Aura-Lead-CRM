@@ -2,14 +2,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bell, Bot, LogOut, User, ChevronDown } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { getInitials } from '../utils/getInitials';
 
-export default function CrmHeader({ onOpenChat, brokerName, brokerRole }: {
-  onOpenChat: () => void,
-  brokerName: string,
-  brokerRole: 'admin' | 'agente'
-}) {
+export default function CrmHeader({ onOpenChat }: { onOpenChat: () => void }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const currentUser = useStore(state => state.currentUser);
 
   // Cerrar el menú si se hace click fuera
   useEffect(() => {
@@ -46,13 +44,13 @@ export default function CrmHeader({ onOpenChat, brokerName, brokerRole }: {
           className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 p-1 rounded-lg transition-colors"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
         >
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs uppercase">
-            {brokerName.charAt(0)}
+          <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase">
+            {currentUser ? getInitials(currentUser.name) : '??'}
           </div>
           <div className="flex items-center gap-2">
             <div>
-              <p className="text-sm font-semibold text-slate-800 leading-none">{brokerName}</p>
-              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mt-1">{brokerRole}</p>
+              <p className="text-sm font-semibold text-slate-800 leading-none">{currentUser?.name || 'Cargando...'}</p>
+              <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold mt-1">{currentUser?.role}</p>
             </div>
             <ChevronDown size={14} className="text-slate-400" />
           </div>
