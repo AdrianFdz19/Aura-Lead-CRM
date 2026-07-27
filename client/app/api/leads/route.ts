@@ -10,10 +10,18 @@ export async function GET() {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    // 1. Construir la condición 'where' dinámicamente según el rol
+    const whereCondition: any = {
+      tenantId: session.tenantId,
+    };
+
+    // Si el usuario es AGENT, filtramos estrictamente por su ID de asignación
+    if (session.role === 'AGENT') {
+      whereCondition.assignedToId = session.userId; // Asegúrate de que tu sesión guarde el id del usuario como userId o id
+    }
+
     const leads = await prisma.lead.findMany({
-      where: {
-        tenantId: session.tenantId,
-      },
+      where: whereCondition,
       select: {
         id: true,
         name: true,
@@ -21,7 +29,8 @@ export async function GET() {
         priority: true,
         lastMessage: true,
         phone: true,
-        email: true
+        email: true,
+        assignedToId: true,
         // Puedes agregar otros campos simples aquí si los necesitas
       },
       orderBy: { updatedAt: 'desc' }, // O 'createdAt', según prefieras

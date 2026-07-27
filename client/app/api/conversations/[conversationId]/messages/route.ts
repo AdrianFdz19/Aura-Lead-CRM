@@ -22,8 +22,23 @@ export async function GET(
             return NextResponse.json({ error: 'ID de conversación no proporcionado' }, { status: 400 });
         }
 
+        // 1. Construimos el filtro de seguridad para la conversación padre
+        const conversationFilter: any = {
+            tenantId: session.tenantId, // Siempre validamos que la conversación sea del mismo tenant
+        };
+
+        // 2. Si es agente, agregamos la validación del dueño del lead
+        if (session.role === 'AGENT') {
+            conversationFilter.lead = {
+                assignedToId: session.userId,
+            };
+        }
+
         const messages = await prisma.message.findMany({
-            where: { conversationId },
+            where: { 
+                conversationId,
+                conversation: conversationFilter 
+            },
             orderBy: { createdAt: 'asc' }, // Muy importante: orden cronológico
         });
 
@@ -39,6 +54,12 @@ export async function POST(
     { params }: { params: Promise<{ conversationId: string }> }
 ) {
     try {
+        const session = await getSession();
+
+        if (!session || !session.tenantId) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+        }
+
         const { conversationId } = await params;
 
         if (!conversationId) {
@@ -47,9 +68,26 @@ export async function POST(
 
         const { messageText } = await req.json();
 
+        if (!messageText) {
+            return NextResponse.json({ error: 'El texto del mensaje es requerido' }, { status: 400 });
+        }
+
+        // 1. Construir la consulta con la seguridad estricta por rol
+        const conversationQuery: any = {
+            id: conversationId,
+            tenantId: session.tenantId, // Validación fundamental de Tenant
+        };
+
+        // Si es agente, validamos obligatoriamente que el lead esté asignado a él
+        if (session.role === 'AGENT') {
+            conversationQuery.lead = {
+                assignedToId: session.userId,
+            };
+        }
+
         // 1. Prisma consulta incluyendo la configuración de WhatsApp
         const conversation = await prisma.conversation.findUnique({
-            where: { id: conversationId },
+            where: conversationQuery,
             include: {
                 lead: true,
                 tenant: {
@@ -105,8 +143,6 @@ export async function POST(
                 metaMessageId: data.messages[0].id
             }
         });
-
-        // 5.- Aqui es donde se llama a pusher con su trigger enviando el mensaje recien enviado en tiempo real al frontend ?
 
         return NextResponse.json(newMessage);
     } catch (error) {

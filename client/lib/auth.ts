@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 export interface UserSession {
   userId: string;
   tenantId: string;
+  role: string;
   status: string; // 'active', 'pending_payment', etc.
   // ... cualquier otro dato que tengas en el payload del JWT
   /* status: string; */
@@ -30,6 +31,7 @@ export async function getSession(): Promise<UserSession | null> {
     return {
       userId: payload.userId as string,
       tenantId: payload.tenantId as string,
+      role: payload.role as string,
       status: payload.status as string,
     } as UserSession;
     
@@ -52,6 +54,7 @@ export async function refreshSession(newStatus: string) {
     const newPayload = {
       userId: payload.userId,
       tenantId: payload.tenantId,
+      role: payload.role,
       status: newStatus,
     };
 

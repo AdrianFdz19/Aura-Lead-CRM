@@ -1,15 +1,29 @@
 // components/ClientLayoutWrapper.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import CrmHeader from "../components/CrmHeader";
 import ChatModal from "../components/ChatModal";
 import Navbar from "./Navbar";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import MobileBottomNav from "./MobileBottomNav";
+import { useStore } from "@/store/useStore";
+import { User, TeamUser } from "../types/user";
 
-export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
+export default function ClientLayoutWrapper({ children, user, initialTeam }: { children: React.ReactNode, user: User | null, initialTeam: TeamUser[] }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { setCurrentUser, setInitialTeam } = useStore();
+  const initialized = useRef(false);
+
+  // Usamos useEffect para hidratar el store solo una vez en el cliente
+  useEffect(() => {
+    if (user && !initialized.current) {
+      setCurrentUser(user);
+      setInitialTeam(initialTeam);
+      initialized.current = true; // Marcamos como inicializado
+    }
+
+  }, [user, initialTeam]);
 
   return (
     // 1. Grid modificado:
@@ -19,7 +33,7 @@ export default function ClientLayoutWrapper({ children }: { children: React.Reac
 
       {/* Header: Visible siempre */}
       <div className="col-start-1 md:col-start-2 row-start-1 bg-white z-10 border-b">
-        <CrmHeader brokerName="Adrian Fernandez" brokerRole="agente" onOpenChat={() => setIsChatOpen(true)} />
+        <CrmHeader onOpenChat={() => setIsChatOpen(true)} />
       </div>
 
       {/* Renderizado condicional del Navegador */}

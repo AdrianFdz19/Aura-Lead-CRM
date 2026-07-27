@@ -23,8 +23,8 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { fileType } = await req.json();
-        const fileKey = `properties/${randomUUID()}-${Date.now()}`;
+        const { fileType, folder } = await req.json();
+        const fileKey = `${folder}/${randomUUID()}-${Date.now()}`;
 
         const command = new PutObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME,

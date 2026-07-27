@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { DndContext, closestCorners, DragEndEvent, useDroppable } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import LeadCard from './LeadCard';
 import { useStore } from '@/store/useStore';
 import Pusher from 'pusher-js';
