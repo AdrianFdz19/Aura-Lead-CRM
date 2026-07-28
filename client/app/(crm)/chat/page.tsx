@@ -1,4 +1,4 @@
-import ChatPage from '@/app/components/ChatPage';
+import ChatPage from '@/app/components/chat/ChatPage';
 import { getSession } from '@/lib/auth'; // Tu función de sesión
 
 export default async function Page() {

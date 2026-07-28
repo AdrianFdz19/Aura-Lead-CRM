@@ -152,6 +152,7 @@ model Message {
   senderId       String?    @map("sender_id") @db.Uuid
   messageText    String     @map("message_text")
   metaMessageId  String?    @unique @map("meta_message_id")
+  status         String     @default("sent")
   createdAt      DateTime   @default(now()) @map("created_at")
 
   conversation Conversation @relation(fields: [conversationId], references: [id])

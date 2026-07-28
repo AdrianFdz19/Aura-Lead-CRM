@@ -5,4 +5,6 @@ export interface Message {
   messageText: string;
   senderType: 'LEAD' | 'AGENT' | 'SYSTEM';
   conversationId: string;
+  metaMessageId?: string | null;
+  status?: 'sent' | 'delivered' | 'read'; 
 }

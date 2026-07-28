@@ -31,11 +31,9 @@ export async function POST(req: Request) {
     console.log('Webhook recibido:', JSON.stringify(body, null, 2));
     const entry = body.entry?.[0];
     const value = entry?.changes?.[0]?.value;
-    const messageData = value?.messages?.[0];
-    const contactData = value?.contacts?.[0];
     const metadata = value?.metadata;
 
-    if (!messageData || !metadata) return NextResponse.json({ status: 'ok' });
+    if (!metadata) return NextResponse.json({ status: 'ok' });
 
     // 1. Identificar el Tenant
     const config = await prisma.whatsappConfig.findFirst({
@@ -43,6 +41,36 @@ export async function POST(req: Request) {
     });
 
     if (!config) return NextResponse.json({ status: 'error', message: 'Tenant no encontrado' });
+
+    // --- CASO A: ES UNA ACTUALIZACIÓN DE ESTADO (delivered / read) ---
+    const statusData = value?.statuses?.[0];
+    if (statusData) {
+        const metaMessageId = statusData.id; // El wamid del mensaje
+        const newStatus = statusData.status; // 'sent' | 'delivered' | 'read'
+
+        // Actualizamos el estado en la base de datos
+        const updatedMessage = await prisma.message.update({
+            where: { metaMessageId },
+            data: { status: newStatus }
+        }).catch(() => null); // Por si acaso el mensaje no existe en BD
+
+        if (updatedMessage) {
+            // Notificamos vía Pusher al frontend para que cambie los checks en tiempo real
+            await pusher.trigger(`tenant-${config.tenantId}`, "message-status-update", {
+                messageId: updatedMessage.id,
+                conversationId: updatedMessage.conversationId,
+                status: newStatus // 'delivered' o 'read'
+            });
+        }
+
+        return NextResponse.json({ status: 'ok' });
+    }
+
+    // --- CASO B: ES UN MENSAJE ENTRANTE (El flujo que ya tienes) ---
+    const messageData = value?.messages?.[0];
+    const contactData = value?.contacts?.[0];
+
+    if (!messageData || !contactData) return NextResponse.json({ status: 'ok' });
 
     // 2. Identificar o Crear el Lead (basado en el wa_id del contacto)
     const lead = await prisma.lead.upsert({
