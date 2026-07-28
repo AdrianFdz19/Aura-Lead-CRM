@@ -25,10 +25,13 @@ interface AppStore {
 
   setConversations: (convs: any[]) => void;
   setCurrentUser: (user: User) => void;
-  setInitialTeam: ( initialTeam: TeamUser[] ) => void;
+  setInitialTeam: (initialTeam: TeamUser[]) => void;
   removeAgent: (agentId: string) => void;
   addAgent: (newAgent: TeamUser) => void;
   updateAgent: (updatedAgent: TeamUser) => void;
+
+  sendMessage: (conversationId: string, text: string) => Promise<void>;
+  updateMessageStatus: (conversationId: string, messageId: string, status: 'sent' | 'delivered' | 'read') => void;
 
   handleIncomingMessage: (payload: { message: Message, conversation: any, lead: any }) => void;
   replaceTempMessage: (conversationId: string, tempId: string, finalMessage: Message) => void;
@@ -71,6 +74,49 @@ export const useStore = create<AppStore>((set) => ({
 
   // Acción de reseteo: vuelve todo a los valores definidos en initialState
   reset: () => set(initialState),
+
+  sendMessage: async (conversationId, text) => {
+    const tempMessage: Message = {
+      id: Date.now().toString(),
+      messageText: text,
+      senderType: 'AGENT',
+      conversationId: conversationId,
+    };
+
+    // Actualización optimista
+    set(state => ({
+      messages: {
+        ...state.messages,
+        [conversationId]: [...(state.messages[conversationId] || []), tempMessage]
+      }
+    }));
+
+    try {
+      const res = await fetch(`/api/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        body: JSON.stringify({ messageText: text }),
+      });
+
+      if (!res.ok) throw new Error('Error al enviar');
+
+      const savedMessage = await res.json();
+      useStore.getState().replaceTempMessage(conversationId, tempMessage.id, savedMessage);
+
+      // Actualizar el preview en la lista de conversaciones
+      set(state => ({
+        conversations: state.conversations.map(c =>
+          c.id === conversationId
+            ? { ...c, messages: [savedMessage], lastMessageAt: new Date().toISOString() }
+            : c
+        )
+      }));
+
+    } catch (error) {
+      console.error('Error enviando mensaje:', error);
+      // Revertir si falla
+      set(state => ({ messages: { ...state.messages, [conversationId]: state.messages[conversationId].filter(m => m.id !== tempMessage.id) } }));
+    }
+  },
 
   handleIncomingMessage: (payload) => set((state) => {
     const { message, conversation, lead } = payload;
@@ -118,6 +164,21 @@ export const useStore = create<AppStore>((set) => ({
       conversations: updatedConversations
     };
   }),
+
+  updateMessageStatus: (conversationId: string, messageId: string, status: 'sent' | 'delivered' | 'read') => {
+    set((state) => {
+      const conversationMessages = state.messages[conversationId] || [];
+      const updatedMessages = conversationMessages.map((msg) =>
+        msg.id === messageId ? { ...msg, status } : msg
+      );
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: updatedMessages
+        }
+      };
+    });
+  },
 
   // Update Lead Status
   updateLeadStatus: (leadId: string, newStatus: string) => {
