@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreHorizontal, UserPlus, ChevronLeft, Check } from 'lucide-react';
+import { MoreHorizontal, UserPlus, ChevronLeft, Check, MessageSquare } from 'lucide-react';
 import { Lead } from '../types/lead';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -15,9 +15,9 @@ interface LeadCardProps {
 }
 
 const priorityColors: Record<LeadPriority, { bg: string; borderLeft: string; label: string; text: string }> = {
-  hot: { bg: 'bg-red-50/80 border-red-200', borderLeft: 'border-l-red-500', text: 'text-red-800', label: '🔥 Caliente' },
-  warm: { bg: 'bg-amber-50/80 border-amber-200', borderLeft: 'border-l-amber-500', text: 'text-amber-800', label: '⚡ Tibio' },
-  cold: { bg: 'bg-blue-50/80 border-blue-200', borderLeft: 'border-l-blue-500', text: 'text-blue-800', label: '❄️ Frío' },
+  hot: { bg: 'bg-red-50/80 border-red-200', borderLeft: 'border-l-red-500', text: 'text-red-800', label: '🔥 Hot' },
+  warm: { bg: 'bg-amber-50/80 border-amber-200', borderLeft: 'border-l-amber-500', text: 'text-amber-800', label: '⚡ Warm' },
+  cold: { bg: 'bg-blue-50/80 border-blue-200', borderLeft: 'border-l-blue-500', text: 'text-blue-800', label: '❄️ Cold' },
 };
 
 const getAvatarColor = (name: string) => {
@@ -96,7 +96,6 @@ function DropdownMenu({ leadId }: DropdownMenuProps) {
               <div className="max-h-48 overflow-y-auto">
                 {team && team.length > 0 ? (
                   team.map((agent) => {
-                    // Ojo: Asegúrate de usar la propiedad en minúsculas/camelCase que maneje tu tipo Lead (asignado como assignedToId)
                     const isAssigned = lead?.assignedToId === agent.id;
                     return (
                       <button
@@ -170,12 +169,17 @@ export default function LeadCard({ lead }: LeadCardProps) {
   const rawPriority = (lead.priority?.toLowerCase() || 'warm') as LeadPriority;
   const currentPriority = priorityColors[rawPriority] || priorityColors.warm;
 
-  // 1. Obtenemos el usuario actual y la lista del equipo desde Zustand
   const currentUser = useStore(state => state.currentUser);
   const team = useStore(state => state.team);
 
-  // 2. Buscamos al agente asignado comparando el ID del lead con la lista del store
   const assignedAgent = team.find(agent => agent.id === lead.assignedToId);
+
+  // Función para manejar la apertura del chat con el lead
+  const handleOpenChat = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evita que se active el drag o eventos padres no deseados
+    // Aquí puedes disparar tu lógica para abrir el chat (ej. cambiar un estado global, router.push, etc.)
+    console.log(`Abrir chat con lead: ${lead.id} - ${lead.name}`);
+  };
 
   return (
     <div
@@ -216,7 +220,6 @@ export default function LeadCard({ lead }: LeadCardProps) {
       {/* 3. Acciones de contacto directo */}
       <div className="flex items-center justify-between pt-1 border-t border-slate-100">
         <div className="flex items-center gap-2">
-          {/* Mostramos el avatar del agente asignado ÚNICAMENTE si el usuario actual es ADMIN y el lead tiene agente */}
           {currentUser?.role === 'ADMIN' && assignedAgent && (
             <div className="flex items-center gap-1.5">
               {assignedAgent.avatar ? (
@@ -238,8 +241,15 @@ export default function LeadCard({ lead }: LeadCardProps) {
           )}
         </div>
 
-        {/* Menú de acciones */}
-        <div className="flex items-center">
+        {/* Botón de Chat y Menú de acciones */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleOpenChat}
+            title="Abrir chat"
+            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+          >
+            <MessageSquare size={16} />
+          </button>
           <DropdownMenu leadId={lead.id} />
         </div>
       </div>
