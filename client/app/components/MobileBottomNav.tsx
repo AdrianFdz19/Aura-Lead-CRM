@@ -12,11 +12,6 @@ const navLinks = [
 export default function MobileBottomNav() {
     return (
         <div className="flex justify-around items-center h-full bg-white border-t border-slate-200">
-            {/* Tus iconos aquí, por ejemplo: */}
-            <button className="flex flex-col items-center justify-center text-slate-600">
-                <HomeIcon size={20} />
-                <span className="text-[10px]">Inicio</span>
-            </button>
             {navLinks.map((link) => {
                 const IconComponent = link.icon;
                 return (

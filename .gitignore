@@ -4,3 +4,11 @@ terraform/
 terraform.tfstate
 terraform.tfstate.backup
 *.tfvars
+
+# Generic credentials
+*.pem
+*.key
+*.cer
+
+# Environment variables
+.env
