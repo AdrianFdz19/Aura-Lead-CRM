@@ -36,7 +36,7 @@ export async function GET() {
       orderBy: { updatedAt: 'desc' }, // O 'createdAt', según prefieras
     });
 
-    console.log(leads);
+    /* console.log(leads); */
     return NextResponse.json(leads, { status: 200 });
 
   } catch (error) {
