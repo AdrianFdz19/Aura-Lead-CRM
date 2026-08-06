@@ -12,7 +12,7 @@ const registerSchema = z.object({
     companyName: z.string().min(2, 'Company name is too short'),
     adminName: z.string().min(2, 'Admin name is too short'),
     selectedPlan: z.enum(['basic', 'professional', 'enterprise'], {
-        errorMap: () => ({ message: 'Invalid subscription plan selected' }),
+        message: 'Invalid subscription plan selected',
     }),
 });
 
@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
         (await cookies()).set('session', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
+            secure: false, // Cambiar esto para cuando este en producción
             sameSite: 'lax',
             path: '/',
         });

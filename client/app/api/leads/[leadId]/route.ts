@@ -52,14 +52,14 @@ export async function PATCH(
 
 export async function DELETE(
     req: Request,
-    { params }: { params: { leadId: string } }
+    { params }: { params: Promise<{ leadId: string }> }
 ) {
     const session = await getSession();
     if (!session || !session.tenantId) {
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
-    const { leadId } = params;
+    const { leadId } = await params;
 
     try {
         // Opcional: Primero borra o desvincula registros dependientes si es necesario

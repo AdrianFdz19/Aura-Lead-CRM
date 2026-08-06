@@ -1,9 +1,11 @@
 'use client' // <--- ESTO ES LO MÁS IMPORTANTE
+import React, { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-import React, { useState } from 'react'
-
-export default function RegisterPage() {
+/**
+ * El componente del formulario de registro que usa `useSearchParams`.
+ */
+function RegisterForm() {
   const searchParams = useSearchParams();
   const selectedPlan = searchParams.get('plan');
   const [showPassword, setShowPassword] = useState(false)
@@ -167,5 +169,19 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * El componente de página que envuelve el formulario en un Suspense boundary.
+ * Esto soluciona el error de "missing-suspense-with-csr-bailout".
+ */
+export default function RegisterPage() {
+  return (
+    // Suspense provee un fallback UI (ej. un spinner o un esqueleto) 
+    // mientras el componente RegisterForm (que depende de useSearchParams) se carga.
+    <Suspense fallback={<div>Cargando...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }

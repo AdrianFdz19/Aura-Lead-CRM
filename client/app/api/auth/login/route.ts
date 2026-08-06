@@ -39,7 +39,7 @@ export async function POST(req: Request) {
 
     (await cookies()).set('session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Cambiar esto para cuando este en producción
       sameSite: 'lax',
       path: '/',
     });
