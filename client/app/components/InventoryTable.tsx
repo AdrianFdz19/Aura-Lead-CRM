@@ -98,7 +98,7 @@ export default function InventoryClient({ tenantId }: InventoryTable) {
     return (
         <>
             {/* 1. CONTENEDOR GENERAL DE MÉTRICAS CON PADDING UNIFORME */}
-            <div className="p-6 space-y-6">
+            <div className="max-w-[1400px] mx-auto p-4 md:p-6 space-y-6">
                 {/* Métricas Superiores (KPI Cards) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {[
@@ -176,58 +176,81 @@ export default function InventoryClient({ tenantId }: InventoryTable) {
                     </select>
                 </div>
             </div>
-            <table className="w-full text-sm min-w-[640px]">
-                <thead className="text-slate-400 uppercase text-[10px] tracking-widest font-bold bg-slate-50/50">
-                    <tr>
-                        <th className="px-6 py-4 text-left">Property</th>
-                        <th className="px-6 py-4 text-left">Status</th>
-                        <th className="px-6 py-4 text-left">Price</th>
-                        <th className="px-6 py-4 text-left">Type</th>
-                        <th className="px-6 py-4 text-left">Location</th>
-                        <th className="px-6 py-4 text-left">Commission</th>
-                        <th className="px-6 py-4 text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                    {/* Mapeamos sobre el estado 'properties' que se actualiza con la búsqueda */}
-                    {properties.map((p) => (
-                        <tr key={p.id} className="hover:bg-slate-50/50 transition-colors"
-                            onClick={() => router.push(`/properties/${p.id}`)}
-                        >
-                            <td className="px-6 py-4 flex items-center gap-4">
-                                <img src={p.images[0] || '/placeholder.jpg'} alt={p.title} className="w-12 h-12 rounded-xl object-cover shadow-sm border border-slate-100" />
-                                <div>
-                                    <p className="font-semibold text-slate-900">{p.title}</p>
-                                    <p className="text-slate-400 text-xs">{p.location}</p>
-                                </div>
-                            </td>
-                            <td className="px-6 py-4">
-                                <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
-                                    {p.status}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 font-medium text-slate-700">${p.price.toLocaleString()}</td>
-                            <td className="px-6 py-4">
-                                <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[11px] font-semibold">
-                                    {p.type || 'N/A'}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4">
-                                <span className="text-slate-600">{p.location}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                                {/* Mostramos la comisión si es mayor que cero */}
-                                {p.commission > 0 && `$${p.commission.toLocaleString()}`}
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <button className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
-                                    View Details
-                                </button>
-                            </td>
+            <div className="hidden md:block overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-sm min-w-[640px]">
+                    <thead className="text-slate-400 uppercase text-[10px] tracking-widest font-bold bg-slate-50/50">
+                        <tr>
+                            <th className="px-6 py-4 text-left">Property</th>
+                            <th className="px-6 py-4 text-left">Status</th>
+                            <th className="px-6 py-4 text-left">Price</th>
+                            <th className="px-6 py-4 text-left">Type</th>
+                            <th className="px-6 py-4 text-left">Location</th>
+                            <th className="px-6 py-4 text-left">Commission</th>
+                            <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {/* Mapeamos sobre el estado 'properties' que se actualiza con la búsqueda */}
+                        {properties.map((p) => (
+                            <tr key={p.id} className="hover:bg-slate-50/50 transition-colors"
+                                onClick={() => router.push(`/properties/${p.id}`)}
+                            >
+                                <td className="px-6 py-4 flex items-center gap-4">
+                                    <img src={p.images[0] || '/placeholder.jpg'} alt={p.title} className="w-12 h-12 rounded-xl object-cover shadow-sm border border-slate-100" />
+                                    <div>
+                                        <p className="font-semibold text-slate-900">{p.title}</p>
+                                        <p className="text-slate-400 text-xs">{p.location}</p>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">
+                                        {p.status}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 font-medium text-slate-700">${p.price.toLocaleString()}</td>
+                                <td className="px-6 py-4">
+                                    <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[11px] font-semibold">
+                                        {p.type || 'N/A'}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className="text-slate-600">{p.location}</span>
+                                </td>
+                                <td className="px-6 py-4">
+                                    {/* Mostramos la comisión si es mayor que cero */}
+                                    {p.commission > 0 && `$${p.commission.toLocaleString()}`}
+                                </td>
+                                <td className="px-6 py-4 text-right">
+                                    <button className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+            {/* CARDS: Visible solo en móvil (Oculto en md) */}
+            <div className="md:hidden space-y-3">
+                {properties.map((p) => (
+                    <div
+                        key={p.id}
+                        onClick={() => router.push(`/properties/${p.id}`)}
+                        className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col gap-3">
+                        <div className="flex items-center gap-3">
+                            <img src={p.images[0]} className="w-12 h-12 rounded-lg object-cover" />
+                            <div>
+                                <p className="font-bold text-slate-900">{p.title}</p>
+                                <p className="text-slate-400 text-xs">{p.location}</p>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                            <span className="font-bold text-slate-700">${p.price.toLocaleString()}</span>
+                            <button className="text-indigo-600 text-sm font-semibold">View Details</button>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </>
     );
 }
