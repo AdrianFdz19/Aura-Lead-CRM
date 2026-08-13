@@ -9,19 +9,43 @@ export async function POST(request: Request) {
         const session = await getSession(); // Simulado: tu verificación de sesión
         console.log("Sesión obtenida:", session);
 
-        if (!session) {
+        if (!session || !session.tenantId) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const body = await request.json();
         console.log("Datos recibidos:", body);
-        const { permanentToken, phoneNumberId, wabaId, phoneNumber } = body;
+        const { accessToken, phoneNumberId, wabaId, phoneNumber } = body;
 
-        // 1. Encriptamos el token antes de guardarlo (before encrypting the token)
-        const encryptedToken = encrypt(permanentToken);
-        console.log("Token encriptado:", encryptedToken);
+        // 1. Buscamos si ya existe una configuración previa para este tenant
+        const existingConfig = await prisma.whatsappConfig.findUnique({
+            where: { tenantId: session.tenantId }
+        });
 
-        // 2. Guardamos o actualizamos la configuración en la base de datos
+        let encryptedToken: string;
+
+        // 2. Evaluamos según el escenario (Creación vs Actualización)
+        if (!existingConfig) {
+            // ESCENARIO A: Es una cuenta NUEVA. El token es obligatorio.
+            if (!accessToken || accessToken.trim() === '') {
+                return NextResponse.json(
+                    { error: 'El token de acceso es obligatorio para la configuración inicial.' },
+                    { status: 400 }
+                );
+            }
+            encryptedToken = encrypt(accessToken);
+        } else {
+            // ESCENARIO B: Es una ACTUALIZACIÓN. El token es opcional.
+            if (accessToken && accessToken.trim() !== '') {
+                // Si mandaron uno nuevo, lo encriptamos
+                encryptedToken = encrypt(accessToken);
+            } else {
+                // Si lo dejaron vacío, conservamos el que ya estaba guardado
+                encryptedToken = existingConfig.accessTokenEncrypted;
+            }
+        }
+
+        // 3. Guardamos o actualizamos usando upsert de manera segura
         await prisma.whatsappConfig.upsert({
             where: {
                 tenantId: session.tenantId
@@ -29,14 +53,14 @@ export async function POST(request: Request) {
             update: {
                 phoneNumberId,
                 wabaId,
-                phoneNumber, // Ya no dará error tras el generate
-                accessTokenEncrypted: encryptedToken,
+                phoneNumber,
+                accessTokenEncrypted: encryptedToken, // Usa el nuevo o conserva el anterior
             },
             create: {
-                tenantId: session.tenantId, // Prisma acepta el ID directo si está marcado como @db.Uuid
+                tenantId: session.tenantId,
                 phoneNumberId,
                 wabaId,
-                phoneNumber, // Ya no dará error tras el generate
+                phoneNumber,
                 accessTokenEncrypted: encryptedToken,
             },
         });
