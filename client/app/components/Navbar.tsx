@@ -9,7 +9,8 @@ const navLinks = [
     { name: 'Inventario', path: '/properties', icon: Building2 },
     { name: 'Leads', path: '/leads', icon: Users },
     { name: 'Team', path: '/team', icon: ShieldUser },
-    { name: 'Chats', path: '/chat', icon: MessagesSquare }
+    { name: 'Chats', path: '/chat', icon: MessagesSquare },
+    { name: 'Settings', path: '/settings', icon: Settings }
 ];
 
 export default function Navbar() {
