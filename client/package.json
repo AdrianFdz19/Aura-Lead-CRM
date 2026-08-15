@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -29,6 +29,7 @@
     "pusher-js": "^8.5.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-phone-number-input": "^3.4.17",
     "resend": "^6.18.0",
     "stripe": "^22.2.0",
     "zod": "^4.4.3",

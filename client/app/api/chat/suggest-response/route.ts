@@ -1,22 +1,11 @@
 
+import { getOpenAIClient } from "@/lib/ai";
 import { getSession } from "@/lib/auth";
 import { leadService } from "@/lib/leadService";
 import prisma from "@/lib/prisma";
 import { propertyService } from "@/lib/propertyService";
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
 import { ChatCompletionMessageParam } from "openai/resources/index.mjs";
-import Pusher from "pusher";
-
-const pusher = new Pusher({
-    appId: process.env.PUSHER_APP_ID!,
-    key: process.env.NEXT_PUBLIC_PUSHER_KEY!,
-    secret: process.env.PUSHER_SECRET!,
-    cluster: process.env.PUSHER_CLUSTER!,
-    useTLS: true,
-});
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const tools: any = [
     {
@@ -54,17 +43,15 @@ const tools: any = [
     }
 ];
 
-interface Property {
-    title: string;
-    description: string;
-    price: number;
-    location: string;
-}
-
 export async function POST(req: NextRequest) {
     try {
         const session = await getSession();
         if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+        const tenantId = session.tenantId;
+
+        // Obtener cliente dinámico según el tenant
+        const { client, model } = await getOpenAIClient(tenantId);
 
         const { conversationId, senderType, messageText } = await req.json();
         if (!conversationId || !senderType || !messageText) {
@@ -85,8 +72,8 @@ export async function POST(req: NextRequest) {
             }));
 
         // 2. Primera llamada: OpenAI decide si necesita usar la herramienta
-        const response = await openai.chat.completions.create({
-            model: process.env.OPENAI_MODEL as string,
+        const response = await client.chat.completions.create({
+            model: model,
             messages: [
                 { role: "system", content: "Eres un asistente inmobiliario. Si el usuario pregunta por propiedades, usa searchProperties. Si no, responde directamente." },
                 ...formattedHistory,
@@ -121,8 +108,8 @@ export async function POST(req: NextRequest) {
                             ? properties.map((p: any) => `- ${p.title}: ${p.description}. Precio: $${p.price}.`).join('\n')
                             : "No se encontraron propiedades.";
 
-                        const finalCompletion = await openai.chat.completions.create({
-                            model: process.env.OPENAI_MODEL as string,
+                        const finalCompletion = await client.chat.completions.create({
+                            model: model,
                             messages: [
                                 { role: "system", content: `Responde basado en: ${context}` },
                                 ...formattedHistory,
@@ -138,8 +125,8 @@ export async function POST(req: NextRequest) {
 
             // 4. ÚNICA respuesta al usuario (Si hubo búsqueda, incluimos el contexto)
             // Si solo fue actualización de CRM, la IA responderá naturalmente a la pregunta del lead
-            const finalCompletion = await openai.chat.completions.create({
-                model: process.env.OPENAI_MODEL as string,
+            const finalCompletion = await client.chat.completions.create({
+                model: model,
                 messages: [
                     { role: "system", content: "Responde al usuario amablemente. Si actualizaste el CRM, ignora esa acción en el texto, no se lo comuniques al lead." },
                     ...formattedHistory,

@@ -1,3 +1,4 @@
+import { Prisma } from "@/app/generated/prisma/browser";
 import { getSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
@@ -16,12 +17,18 @@ export async function GET(request: NextRequest) {
             where: { id: session.tenantId },
             select: {
                 name: true,
-                whatsappConfig: { // Relación con la tabla que mostraste en Prisma Studio
+                whatsappConfig: {
                     select: {
                         id: true,
                         phoneNumber: true,
                         phoneNumberId: true,
                         wabaId: true,
+                    }
+                },
+                tenantLlmConfig: { // <--- Singular
+                    select: {
+                        provider: true,
+                        modelName: true
                     }
                 }
             }
@@ -31,14 +38,13 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
         }
 
-        // Determinamos el estatus de WhatsApp de forma limpia en el backend
         const hasWhatsAppConfig = Boolean(
-            tenantData.whatsappConfig && 
-            tenantData.whatsappConfig.phoneNumber && 
+            tenantData.whatsappConfig &&
+            tenantData.whatsappConfig.phoneNumber &&
             tenantData.whatsappConfig.wabaId
         );
 
-        // Preparamos la respuesta final para el frontend
+        // Preparamos la respuesta final de forma limpia y directa (1 a 1)
         const responsePayload = {
             name: tenantData.name,
             whatsappConnected: hasWhatsAppConfig,
@@ -46,6 +52,10 @@ export async function GET(request: NextRequest) {
                 phoneNumber: tenantData.whatsappConfig.phoneNumber,
                 phoneNumberId: tenantData.whatsappConfig.phoneNumberId,
                 wabaId: tenantData.whatsappConfig.wabaId
+            } : null,
+            llmConfig: tenantData.tenantLlmConfig ? { // <--- Objeto único, sin maps
+                provider: tenantData.tenantLlmConfig.provider,
+                modelName: tenantData.tenantLlmConfig.modelName
             } : null
         };
 
