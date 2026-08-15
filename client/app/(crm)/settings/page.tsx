@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Building, Key, Bot, AlertTriangle, Save, ShieldCheck } from 'lucide-react';
+import { Building, Key, Bot, AlertTriangle, Save, ShieldCheck, Link, ExternalLink, AlertCircle } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,8 @@ export default function TenantSettings() {
 	const [openaiKey, setOpenaiKey] = useState('');
 	const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
 	const [whatsappStatus, setWhatsappStatus] = useState(true);
+	const [llmProvider, setLlmProvider] = useState('');
+	const [llmModel, setLlmModel] = useState('');
 
 	// Estados globales simulados (pueden provenir de un store o contexto) 
 	const currentUser = useStore((state) => state.currentUser);
@@ -52,7 +54,8 @@ export default function TenantSettings() {
 				setOpenaiKey('');
 				setSelectedModel('gpt-4o-mini');
 				setWhatsappStatus(data.whatsappConnected || false);
-				
+				setLlmProvider(data.llmConfig?.provider || '');
+				setLlmModel(data.llmConfig?.modelName || '');
 			} catch (error) {
 				console.error(error);
 			} finally {
@@ -123,56 +126,57 @@ export default function TenantSettings() {
 						</form>
 					</div>
 
-					{/* 2. Configuración de OpenAI / Asistente IA (Bring Your Own Key) */}
-					<div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
-						<div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-							<div className="p-2.5 rounded-xl bg-purple-50 text-purple-600 border border-purple-100">
-								<Bot className="w-5 h-5" />
+					{/* Tarjeta de Estatus de IA (Agnóstica) */}
+					<div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+						<div className="flex items-center justify-between">
+							<div className="flex items-center gap-3">
+								<div className={`p-2.5 rounded-xl ${llmModel ? 'bg-purple-50 text-purple-600' : 'bg-slate-100 text-slate-400'}`}>
+									<Bot className="w-5 h-5" />
+								</div>
+								<div>
+									<h3 className="text-base font-semibold text-slate-800">Modelo de Inteligencia Artificial</h3>
+									<p className="text-xs text-slate-500">
+										{llmModel
+											? 'Configuración de LLM activa para el procesamiento de mensajes.'
+											: 'Utilizando la configuración global por defecto del servidor.'}
+									</p>
+								</div>
 							</div>
-							<div>
-								<h2 className="font-bold text-slate-900">Inteligencia Artificial (OpenAI)</h2>
-								<p className="text-xs text-slate-400">Configura tu propia API Key y modelo preferido para los agentes virtuales</p>
-							</div>
+
+							{/* Badge de estatus */}
+							<span className={`px-2.5 py-1 rounded-full text-xs font-medium ${llmModel ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+								}`}>
+								{llmModel ? 'Configurado' : 'Predeterminado'}
+							</span>
 						</div>
 
-						<form onSubmit={handleSaveAI} className="space-y-4">
-							<div>
-								<label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-									OpenAI API Key personalizada
-								</label>
-								<input
-									type="password"
-									placeholder="sk-proj-..."
-									value={openaiKey}
-									onChange={(e) => setOpenaiKey(e.target.value)}
-									className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2-purple-500 transition-all"
-								/>
-								<p className="text-[11px] text-slate-400 mt-1">Si se deja vacío, el sistema utilizará la clave global por defecto del servidor.</p>
+						{/* Detalles si están configurados */}
+						{llmModel ? (
+							<div className="bg-slate-50 p-3.5 rounded-xl border border-slate-100 grid grid-cols-2 gap-4 text-sm">
+								<div>
+									<span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Proveedor</span>
+									<span className="font-medium text-slate-700 capitalize">{llmProvider}</span>
+								</div>
+								<div>
+									<span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Modelo</span>
+									<span className="font-medium text-slate-700">{llmModel}</span>
+								</div>
 							</div>
+						) : (
+							<div className="flex items-center gap-2 p-3 rounded-xl bg-slate-50 text-slate-500 text-xs">
+								<AlertCircle className="w-4 h-4 text-slate-400 shrink-0" />
+								<span>No hay un proveedor personalizado registrado. El sistema opera con los parámetros base.</span>
+							</div>
+						)}
 
-							<div>
-								<label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-									Modelo de OpenAI a utilizar
-								</label>
-								<select
-									value={selectedModel}
-									onChange={(e) => setSelectedModel(e.target.value)}
-									className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 transition-all"
-								>
-									<option value="gpt-4o-mini">GPT-4o Mini (Recomendado / Rápido y económico)</option>
-									<option value="gpt-4o">GPT-4o (Máximo razonamiento y precisión)</option>
-								</select>
-							</div>
-
-							<div className="flex justify-end">
-								<button
-									type="submit"
-									className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-sm"
-								>
-									<Save className="w-4 h-4" /> Actualizar IA
-								</button>
-							</div>
-						</form>
+						{/* Botón de redirección hacia /settings/llm-config */}
+						<div className="flex justify-end pt-2">
+							<button
+								onClick={() => router.push('/settings/llm-config')}
+								className="w-full py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+								Administrar Configuración de IA
+							</button>
+						</div>
 					</div>
 
 				</div>
@@ -193,9 +197,15 @@ export default function TenantSettings() {
 								{whatsappStatus ? 'Conectado' : 'Desconectado'}
 							</span>
 						</div>
-						<p className="text-xs text-slate-500">
-							La línea oficial de Meta se encuentra vinculada correctamente para este tenant. Las webhooks están operando con normalidad.
-						</p>
+						{whatsappStatus ? (
+							<p className="text-xs text-slate-500">
+								La línea oficial de Meta se encuentra vinculada correctamente para este tenant. Las webhooks están operando con normalidad.
+							</p>
+						) : (
+							<p className="text-xs text-slate-500">
+								Aún no se ha vinculado una línea oficial de Meta. Configura tus credenciales para habilitar las webhooks y la mensajería.
+							</p>
+						)}
 						<button
 							onClick={() => router.push('/settings/whatsapp')}
 							className="w-full py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">

@@ -8,20 +8,21 @@ datasource db {
 }
 
 model Tenant {
-  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String          @db.VarChar(255)
-  slug           String          @unique @db.VarChar(100)
-  isActive       Boolean         @default(true) @map("is_active")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @default(now()) @updatedAt @map("updated_at")
-  subscription   Subscription?
-  conversations  Conversation[]
-  leads          Lead[]
-  products       Product[]
-  tasks          Task[]
-  users          User[]
-  whatsappConfig WhatsappConfig?
-  properties     Property[]
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String           @db.VarChar(255)
+  slug            String           @unique @db.VarChar(100)
+  isActive        Boolean          @default(true) @map("is_active")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @default(now()) @updatedAt @map("updated_at")
+  subscription    Subscription?
+  conversations   Conversation[]
+  leads           Lead[]
+  products        Product[]
+  tasks           Task[]
+  users           User[]
+  whatsappConfig  WhatsappConfig?
+  properties      Property[]
+  tenantLlmConfig TenantLlmConfig?
 
   @@map("tenants")
 }
@@ -174,6 +175,18 @@ model WhatsappConfig {
 
   @@index([tenantId])
   @@map("whatsapp_configs")
+}
+
+model TenantLlmConfig {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId        String @unique @map("tenant_id") @db.Uuid // <--- @unique fuerza que solo haya 1 por tenant
+  provider        String @db.VarChar(50)
+  modelName       String @map("model_name") @db.VarChar(100)
+  apiKeyEncrypted String @map("api_key_encrypted") @db.Text
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_llm_configs")
 }
 
 model Product {

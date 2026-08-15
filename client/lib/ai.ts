@@ -1,5 +1,7 @@
 // lib/ai.ts
 import OpenAI from 'openai';
+import { decrypt } from '@/lib/encryption'; // Tu función de descifrado
+import prisma from './prisma';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -13,4 +15,23 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   });
 
   return response.data[0].embedding;
+}
+
+export async function getOpenAIClient(tenantId: string) {
+    // 1. Buscamos la configuración del tenant
+    const config = await prisma.tenantLlmConfig.findUnique({
+        where: { tenantId },
+    });
+
+    // 2. Determinamos qué key usar
+    // Si tiene configuración propia, usamos esa; si no, caemos al .env
+    const apiKey = config?.apiKeyEncrypted 
+        ? decrypt(config.apiKeyEncrypted) 
+        : process.env.OPENAI_API_KEY;
+
+    // 3. Retornamos la instancia configurada
+    return {
+        client: new OpenAI({ apiKey }),
+        model: config?.modelName || process.env.OPENAI_MODEL || 'gpt-4o-mini'
+    };
 }

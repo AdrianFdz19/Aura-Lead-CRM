@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     images // <--- Recibimos el arreglo consolidado desde el cliente
   } = body;
 
-  console.log(body);
+  /* console.log(body); */
 
   try {
     // 2. Verificamos que la propiedad exista y pertenezca al tenant actual

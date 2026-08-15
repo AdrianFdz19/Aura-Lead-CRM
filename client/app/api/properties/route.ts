@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
 
   // 2. Leer el cuerpo de la petición (solo los datos del formulario)
   const body = await req.json();
-  console.log(body);
+  /* console.log(body); */
 
   // 3. Crear usando el tenantId que viene de la SESIÓN (no del cuerpo)
   try {
@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       tenantId: session.tenantId, // <--- Seguridad crítica aquí
     });
 
-    console.log(property);
+    /* console.log(property); */
     return NextResponse.json(property);
   } catch (error: any) {
     console.error("ERROR DETALLADO:", error.message);

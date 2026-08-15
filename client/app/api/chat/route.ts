@@ -1,13 +1,8 @@
 // app/api/chat/route.ts
+import { getOpenAIClient } from "@/lib/ai";
 import { getSession } from "@/lib/auth";
 import { propertyService } from "@/lib/propertyService";
 import { NextResponse } from "next/server";
-import { OpenAI } from "openai";
-
-// Inicializamos OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 const openAiModel = process.env.OPENAI_MODEL as string;
 
@@ -18,6 +13,11 @@ export async function POST(req: Request) {
     if (!session) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const tenantId = session.tenantId;
+
+    // Obtener cliente dinámico según el tenant
+    const { client, model } = await getOpenAIClient(tenantId);
 
     try {
         const { message, history } = await req.json();
@@ -41,8 +41,8 @@ export async function POST(req: Request) {
         }));
 
         // 1. Llamada básica a OpenAI
-        const completion = await openai.chat.completions.create({
-            model: openAiModel, // O gpt-3.5-turbo
+        const completion = await client.chat.completions.create({
+            model: model, 
             messages: [
                 {
                     role: "system",
