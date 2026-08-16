@@ -66,16 +66,26 @@ export default function TenantSettings() {
 		fetchTenantData();
 	}, []);
 
-	const handleSaveGeneral = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		// Lógica para guardar nombre del tenant
-		console.log('Guardando tenant:', tenantName);
-	};
+	// Funcion para cambiar el nombre del tenant
+	async function handleTenantNameChange(e: React.FormEvent<HTMLFormElement>) {
+		try {
+			console.log('Intentando actualizar el nombre del tenant a:', tenantName);
 
-	const handleSaveAI = (e: React.FormEvent<HTMLFormElement>) => {
-		e.preventDefault();
-		// Lógica para guardar credenciales de OpenAI por tenant
-		console.log('Guardando IA:', { openaiKey, selectedModel });
+			// Simulación de llamada a la API para actualizar el nombre del tenant
+			const response = await fetch('/api/tenant', {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name: tenantName }),
+			});
+
+			if (!response.ok) throw new Error('Error al actualizar el nombre del tenant');
+
+			const updatedTenant = await response.json();
+			console.log(`${updatedTenant.message}`, `${updatedTenant.name}`);
+
+		} catch (error) {
+			console.error('Error al actualizar el nombre del tenant:', error);
+		}
 	};
 
 	return (
@@ -103,7 +113,7 @@ export default function TenantSettings() {
 							</div>
 						</div>
 
-						<form onSubmit={handleSaveGeneral} className="space-y-4">
+						<form onSubmit={handleTenantNameChange} className="space-y-4">
 							<div>
 								<label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
 									Nombre de la Inmobiliaria / Empresa
