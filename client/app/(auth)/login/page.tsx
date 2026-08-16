@@ -20,21 +20,57 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-8">
-      <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
-        <h2 className="text-2xl font-bold">Log in</h2>
-        <input 
-          type="email" placeholder="Email" required
-          className="w-full px-3 py-2 border rounded"
-          onChange={(e) => setFormData({...formData, email: e.target.value})}
-        />
-        <input 
-          type="password" placeholder="Password" required
-          className="w-full px-3 py-2 border rounded"
-          onChange={(e) => setFormData({...formData, password: e.target.value})}
-        />
-        <button className="w-full bg-blue-600 text-white py-2 rounded">Login</button>
-      </form>
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6">
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-slate-800">Iniciar sesión</h2>
+          <p className="text-sm text-slate-500 mt-1">Ingresa tus credenciales para acceder al sistema.</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-5">
+          {/* Email Field */}
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+              Correo electrónico
+            </label>
+            <input
+              type="email"
+              placeholder="nombre@empresa.com"
+              required
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+
+          {/* Password Field */}
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+              Contraseña
+            </label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              required
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 outline-none focus:ring-2 focus:ring-purple-500 transition-all"
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            />
+          </div>
+
+          {/* Login Button */}
+          <button
+            type="submit"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl text-sm transition-all shadow-sm active:scale-[0.98]"
+          >
+            Acceder al sistema
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-xs text-slate-400">
+            ¿Problemas para acceder? Contacta a tu administrador.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

@@ -66,3 +66,41 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
+
+export async function PATCH(request: NextRequest) {
+    try {
+        const session = await getSession();
+
+        if (!session || !session.tenantId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { name } = body;
+        console.log('Nombre recibido para actualizar:', name);
+
+        if (!name || typeof name !== 'string' || name.trim() === '') {
+            return NextResponse.json({ error: 'El nombre del tenant es obligatorio' }, { status: 400 });
+        }
+
+        const slug = name.trim().toLowerCase().replace(/\s+/g, '-');
+
+        const updatedTenant = await prisma.tenant.update({
+            where: { id: session.tenantId },
+            data: { name: name.trim(), slug },
+            select: { id: true, name: true, slug: true }
+        });
+
+        return NextResponse.json(
+            {
+                message: 'Nombre del tenant actualizado exitosamente',
+                tenant: updatedTenant
+            },
+            { status: 200 }
+        );
+
+    } catch (err) {
+        console.error('Error al actualizar el tenant:', err);
+        return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+    }
+};

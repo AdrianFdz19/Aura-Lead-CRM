@@ -6,7 +6,7 @@ import { LayoutDashboard, Building2, Users, Bot, BarChart3, Settings, ChevronLef
 
 const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Inventario', path: '/properties', icon: Building2 },
+    { name: 'Properties', path: '/properties', icon: Building2 },
     { name: 'Leads', path: '/leads', icon: Users },
     { name: 'Team', path: '/team', icon: ShieldUser },
     { name: 'Chats', path: '/chat', icon: MessagesSquare },
