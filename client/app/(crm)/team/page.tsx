@@ -5,6 +5,7 @@ import { UserPlus, Mail, Phone, MoreVertical, Shield, User, CheckCircle, Search,
 import AddAgentForm from '@/app/components/AddAgentForm';
 import { useStore } from '@/store/useStore';
 import { TeamUser } from '@/app/types/user';
+import Link from 'next/link';
 
 export default function TeamPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -38,7 +39,7 @@ export default function TeamPage() {
 
       const memberRoleFormatted = member.role === 'ADMIN' ? 'ADMIN' : 'AGENT';
       const roleMatch = roleFilter === 'All' || memberRoleFormatted === roleFilter;
-      
+
       const memberStatusFormatted = member.isActive ? 'Active' : 'Inactive';
       const statusMatch = statusFilter === 'All' || memberStatusFormatted === statusFilter;
 
@@ -84,13 +85,15 @@ export default function TeamPage() {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Team Management</h1>
           <p className="text-sm text-slate-500 mt-1">View, manage, and invite team members.</p>
         </div>
-        <button
-          onClick={() => setIsAddAgentModalOpen(true)}
-          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-        >
-          <UserPlus size={16} />
-          <span>Add New Agent</span>
-        </button>
+        {currentUser?.role === 'ADMIN' && (
+          <button
+            onClick={() => setIsAddAgentModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <UserPlus size={16} />
+            <span>Add New Agent</span>
+          </button>
+        )}
       </div>
 
       {/* Barra de Filtros y Búsqueda */}
@@ -133,7 +136,7 @@ export default function TeamPage() {
           const roleLabel = member.role === 'ADMIN' ? 'Admin' : 'Sales Agent';
           const isActive = member.isActive;
           const statusLabel = isActive ? 'Active' : 'Inactive';
-          
+
           // Generar iniciales para el avatar en caso de que no tenga foto
           const initials = member.name
             ? member.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
@@ -144,9 +147,9 @@ export default function TeamPage() {
               <div className="p-6 flex-1">
                 <div className="flex items-center justify-between mb-4">
                   {member.avatar ? (
-                    <img 
-                      src={`${member.avatar}`} 
-                      alt={member.name} 
+                    <img
+                      src={`${member.avatar}`}
+                      alt={member.name}
                       className="w-12 h-12 rounded-full object-cover border border-slate-200"
                     />
                   ) : (
@@ -160,9 +163,19 @@ export default function TeamPage() {
                     </button>
                     {openMenuId === member.id && (
                       <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-2 z-10 animate-in fade-in zoom-in-95">
-                        <button className="flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
-                          <Edit size={16} /> Edit Role
-                        </button>
+                        {currentUser?.role === 'ADMIN' && (
+                          <>
+                            <Link
+                              href={`/team/${member.id}`}
+                              className="flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              <User size={16} /> View Profile
+                            </Link>
+                            <button className="flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+                              <Edit size={16} /> Edit Role
+                            </button>
+                          </>
+                        )}
                         <button className="flex items-center gap-3 w-full px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
                           <Activity size={16} /> View Activity
                         </button>
@@ -247,10 +260,10 @@ export default function TeamPage() {
               <p className="text-sm text-slate-500 mt-1">Fill in the details to invite a new member to the team.</p>
             </div>
 
-            <AddAgentForm 
+            <AddAgentForm
               onClose={() => {
                 setIsAddAgentModalOpen(false);
-              }} 
+              }}
             />
 
             <div className="p-6 border-t bg-slate-50 flex justify-end gap-3">

@@ -55,6 +55,8 @@ model Property {
 
   embedding Unsupported("vector(1536)")?
 
+  isProtected Boolean @default(false) @map("is_protected")
+
   tenantId  String   @map("tenant_id") @db.Uuid
   createdAt DateTime @default(now())
 
@@ -103,23 +105,25 @@ enum LeadPriority {
 }
 
 model Lead {
-  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  waId           String         @unique @map("wa_id")
-  tenantId       String         @map("tenant_id") @db.Uuid
-  assignedToId   String?        @map("assigned_to_id") @db.Uuid
-  name           String         @db.VarChar(255)
-  email          String?        @db.VarChar(255)
-  phone          String?        @db.VarChar(50)
-  status         String         @default("nuevo") @db.VarChar(50)
-  priority       LeadPriority   @default(WARM)
-  lastMessage    String?        @map("last_message") @db.Text
-  customMetadata Json           @default("{}") @map("custom_metadata")
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @default(now()) @updatedAt @map("updated_at")
+  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  waId           String       @unique @map("wa_id")
+  tenantId       String       @map("tenant_id") @db.Uuid
+  assignedToId   String?      @map("assigned_to_id") @db.Uuid
+  name           String       @db.VarChar(255)
+  email          String?      @db.VarChar(255)
+  phone          String?      @db.VarChar(50)
+  status         String       @default("nuevo") @db.VarChar(50)
+  priority       LeadPriority @default(WARM)
+  lastMessage    String?      @map("last_message") @db.Text
+  customMetadata Json         @default("{}") @map("custom_metadata")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @default(now()) @updatedAt @map("updated_at")
+
+  isProtected   Boolean        @default(false) @map("is_protected")
   // Al borrar un Lead, se borran sus conversaciones, intereses y tareas asociadas
-  conversations  Conversation[]
-  interests      LeadInterest[]
-  tasks          Task[]
+  conversations Conversation[]
+  interests     LeadInterest[]
+  tasks         Task[]
 
   assignedTo User?  @relation("LeadAssignment", fields: [assignedToId], references: [id], onDelete: SetNull)
   tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -154,9 +158,10 @@ model Message {
   messageText    String     @map("message_text")
   metaMessageId  String?    @unique @map("meta_message_id")
   status         String     @default("sent")
+  isProtected    Boolean    @default(false) @map("is_protected")
   createdAt      DateTime   @default(now()) @map("created_at")
 
-  conversation Conversation @relation(fields: [conversationId], references: [id])
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender       User?        @relation(fields: [senderId], references: [id], onDelete: SetNull)
 
   @@map("messages")

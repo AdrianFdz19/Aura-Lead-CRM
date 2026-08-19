@@ -22,9 +22,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const tenantId = session.tenantId;
+
     try {
         const { fileType, folder } = await req.json();
-        const fileKey = `${folder}/${randomUUID()}-${Date.now()}`;
+        const fileKey = `tenants/${tenantId}/${folder}/${randomUUID()}-${Date.now()}`;
 
         const command = new PutObjectCommand({
             Bucket: process.env.AWS_BUCKET_NAME,

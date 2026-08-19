@@ -1,8 +1,9 @@
 "use client";
 
 import { useStore } from '@/store/useStore';
-import { Mail, ShieldCheck, Users, Briefcase, Activity, Phone, Building2, ChevronRight } from 'lucide-react';
+import { Mail, ShieldCheck, Users, Briefcase, Activity, Phone, Building2, ChevronRight, Edit3 } from 'lucide-react';
 import { useEffect } from 'react';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const currentUser = useStore(state => state.currentUser);
@@ -16,8 +17,6 @@ export default function ProfilePage() {
       .then((data) => setLeads(data))
       .catch(console.error);
   }, [setLeads]);
-
-  console.log(leads);
 
   if (!currentUser) {
     return (
@@ -37,11 +36,18 @@ export default function ProfilePage() {
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Mi Perfil</h1>
             <p className="text-sm text-slate-500">Administra tu información personal y visualiza tus asignaciones en el sistema.</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
               <span className="w-1.5 h-1.5 mr-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
               Sesión Activa
             </span>
+            <Link
+              href="/profile/settings"
+              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition-all shadow-sm shadow-indigo-600/20"
+            >
+              <Edit3 size={14} />
+              <span>Editar perfil</span>
+            </Link>
           </div>
         </div>
 
@@ -50,9 +56,19 @@ export default function ProfilePage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -z-0 opacity-50 pointer-events-none"></div>
           
           <div className="relative z-10 flex flex-col md:flex-row items-center gap-6 mb-8">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-3xl shadow-md shadow-indigo-200">
-              {currentUser.name?.charAt(0).toUpperCase()}
-            </div>
+            {/* Renderizado condicional del Avatar de S3 o Letra Inicial */}
+            {currentUser.avatar ? (
+              <img
+                src={currentUser.avatar}
+                alt={currentUser.name}
+                className="w-20 h-20 rounded-2xl object-cover shadow-md shadow-slate-200 border border-slate-200"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 flex items-center justify-center text-white font-bold text-3xl shadow-md shadow-indigo-200">
+                {currentUser.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
+
             <div className="text-center md:text-left space-y-1">
               <h2 className="text-2xl font-bold text-slate-900">{currentUser.name}</h2>
               <div className="flex items-center justify-center md:justify-start gap-2 text-slate-500 text-sm">
@@ -112,7 +128,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Sección de Leads Asignados (Detalle visual estilo CRM) */}
+        {/* Sección de Leads Asignados */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div className="p-6 border-b border-slate-100 flex items-center justify-between">
             <div>

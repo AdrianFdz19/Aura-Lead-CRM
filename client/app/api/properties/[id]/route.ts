@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from "@/lib/prisma";
 import { getPublicUrl } from "@/lib/s3";
 import { getSession } from '@/lib/auth';
-import { Images } from 'lucide-react';
 
 interface RouteParams {
   params: Promise<{
@@ -71,6 +70,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
   const tenantId = session.tenantId;
+  const isDemoTenant = tenantId === process.env.DEMO_TENANT_ID;
 
   // 1. Extraemos los campos del body (incluyendo 'images') usando request.json()
   const body = await request.json();
@@ -98,6 +98,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     if (!property) {
       return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+    }
+
+    if (isDemoTenant && property.isProtected) {
+      return NextResponse.json(
+        { error: "Esta propiedad es parte del catálogo demo y no puede ser modificada." },
+        { status: 403 }
+      );
     }
 
     // 3. Actualizamos la propiedad en Prisma incluyendo el arreglo de imágenes
@@ -136,5 +143,58 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error("Error updating property detail API:", error);
     return NextResponse.json({ error: 'Failed to update property' }, { status: 500 });
+  }
+}
+
+// Delete a property
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+
+  if (!session || !session.tenantId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const tenantId = session.tenantId;
+  const isDemoTenant = tenantId === process.env.DEMO_TENANT_ID;
+
+  try {
+    // 1. Verificamos que la propiedad exista y pertenezca al tenant actual
+    const property = await prisma.property.findFirst({
+      where: {
+        id: id,
+        tenantId: tenantId,
+      },
+    });
+
+    if (!property) {
+      return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+    }
+
+    // 2. Si es cuenta demo Y la propiedad está protegida, bloqueamos la eliminación
+    if (isDemoTenant && property.isProtected) {
+      return NextResponse.json(
+        { error: "Esta propiedad es parte del catálogo demo y no puede ser eliminada." },
+        { status: 403 }
+      );
+    }
+
+    // 3. Procedemos a eliminar la propiedad de la base de datos
+    await prisma.property.delete({
+      where: {
+        id: id,
+      },
+    });
+
+    // Opcional: Aquí podrías agregar un trigger de Pusher si muestras las propiedades en tiempo real en el frontend
+
+    return NextResponse.json({ message: 'Property deleted successfully' }, { status: 200 });
+
+  } catch (error) {
+    console.error("Error deleting property API:", error);
+    return NextResponse.json({ error: 'Failed to delete property' }, { status: 500 });
   }
 }

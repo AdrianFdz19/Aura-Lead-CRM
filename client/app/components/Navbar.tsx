@@ -10,11 +10,18 @@ const navLinks = [
     { name: 'Leads', path: '/leads', icon: Users },
     { name: 'Team', path: '/team', icon: ShieldUser },
     { name: 'Chats', path: '/chat', icon: MessagesSquare },
-    { name: 'Settings', path: '/settings', icon: Settings }
+    { name: 'Settings', path: '/settings', icon: Settings, onlyAdmin: true },
 ];
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: { role: string } | null }) {
     const [isExpanded, setIsExpanded] = useState(true);
+    const isAdmin = user?.role === 'ADMIN';
+
+    // Filtramos los enlaces dependiendo si el usuario es admin o no
+    const filteredLinks = navLinks.filter((link) => {
+        if (link.onlyAdmin && !isAdmin) return false;
+        return true;
+    });
 
     return (
         <aside className={`${isExpanded ? 'w-64' : 'w-20'} bg-white shadow-[4px_0_24px_rgba(0,0,0,0.05)] transition-all duration-300 flex flex-col h-full z-20`}>
@@ -35,9 +42,10 @@ export default function Navbar() {
             </button>
 
             <nav className="flex-1 px-4 space-y-2 mt-4">
-                {navLinks.map((link) => {
+                {filteredLinks.map((link) => {
                     const Icon = link.icon;
                     return (
+
                         <Link
                             key={link.name}
                             href={link.path}
@@ -50,12 +58,6 @@ export default function Navbar() {
                 })}
             </nav>
 
-            <div className="p-4 border-none">
-                <Link href="/settings" className="flex items-center gap-4 px-3 py-3 text-slate-500 hover:text-blue-600">
-                    <Settings size={22} />
-                    {isExpanded && <span className="font-medium">Ajustes</span>}
-                </Link>
-            </div>
         </aside>
     );
 }
