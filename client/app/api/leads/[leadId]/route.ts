@@ -23,8 +23,8 @@ export async function PATCH(
 
     try {
         // 2. Haz await de params antes de acceder a leadId
-        const { leadId } = await params; 
-        
+        const { leadId } = await params;
+
         const body = await req.json();
         const { status } = body;
 
@@ -59,20 +59,39 @@ export async function DELETE(
         return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
+    const isDemoTenant = session.tenantId === process.env.DEMO_TENANT_ID;
     const { leadId } = await params;
 
     try {
-        // Opcional: Primero borra o desvincula registros dependientes si es necesario
-        // (ej: mensajes, conversaciones). Prisma puede requerir esto.
-        // Por simplicidad, asumimos que se puede borrar directamente.
-        await prisma.lead.delete({
+        // 1. Buscamos el lead primero para verificar si existe y si está protegido
+        const lead = await prisma.lead.findFirst({
             where: {
                 id: leadId,
-                tenantId: session.tenantId, // Asegura que solo borres leads de tu tenant
+                tenantId: session.tenantId, // Garantiza que pertenezca al tenant actual
             },
         });
 
-        // ¡La parte clave! Notificar a todos los clientes conectados.
+        if (!lead) {
+            return NextResponse.json({ error: 'Lead no encontrado' }, { status: 404 });
+        }
+
+        // 2. Si es cuenta demo Y el lead está protegido, bloqueamos la eliminación
+        if (isDemoTenant && lead.isProtected) {
+            return NextResponse.json(
+                { error: "Este lead es parte de la cuenta demo y no puede ser eliminado." },
+                { status: 403 }
+            );
+        }
+
+        // 3. Procedemos a eliminar el lead (gracias al onDelete: Cascade que pusimos en el Schema, 
+        // se borrarán automáticamente sus conversaciones y mensajes asociados)
+        await prisma.lead.delete({
+            where: {
+                id: leadId,
+            },
+        });
+
+        // 4. Notificar a todos los clientes conectados vía Pusher
         await pusher.trigger(`tenant-${session.tenantId}`, "lead-deleted", {
             leadId: leadId,
         });

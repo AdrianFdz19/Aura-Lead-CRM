@@ -9,7 +9,7 @@ export default async function Dashboard() {
   if (!session) return null;
 
   return (
-    <div className="w-full h-full bg-slate-50 p-4 md:p-6 space-y-6">
+    <div className="w-full h-full bg-slate-50 p-4 md:p-6 space-y-6 mb-24">  
       {/* Encabezado */}
       <div className="mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">Property Inventory</h1>

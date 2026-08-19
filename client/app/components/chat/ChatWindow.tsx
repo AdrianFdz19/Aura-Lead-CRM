@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Bot, ChevronLeft, Sparkles, Check, CheckCheck } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { Message } from '../../types/chat';
+import { MessageSkeleton } from './MessageSkeleton';
 
 interface ChatWindow {
     selectedChat: any,
@@ -16,6 +17,7 @@ export default function ChatWindow({
 
 }: ChatWindow) {
 
+    const [isLoadingChat, setIsLoadingChat] = useState(false);
     const { messages: allMessages, sendMessage } = useStore();
     const [isGenerating, setIsGenerating] = useState(false);
     const [aiResponse, setAiResponse] = useState<string | null>(null);
@@ -26,6 +28,15 @@ export default function ChatWindow({
 
     // Ref para el contenedor de mensajes para poder controlar el scroll
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (selectedChat) {
+            setIsLoadingChat(true);
+            // Simulamos un breve tiempo de carga para que la animación se aprecie
+            const timer = setTimeout(() => setIsLoadingChat(false), 500);
+            return () => clearTimeout(timer);
+        }
+    }, [selectedChat]);
 
     // --- INICIO: Lógica para el scroll automático ---
     useEffect(() => {
@@ -75,7 +86,7 @@ export default function ChatWindow({
     // Enviar un mensaje
     const handleSendMessage = async (text: string) => {
         if (!selectedChat || !text.trim()) return;
-        
+
         const messageToSend = text;
         setInputText('');
         // Ahora simplemente llamamos a la acción del store
@@ -113,40 +124,44 @@ export default function ChatWindow({
                         ref={messagesContainerRef}
                         className="flex-1 overflow-y-auto p-8 space-y-4"
                     >
-                        {messages.map((msg, index) => (
-                            <div
-                                key={msg.id}
-                                className={`flex ${msg.senderType === 'AGENT' ? 'justify-end' : 'justify-start'}`}
-                            >
-                                <div className={`relative max-w-[70%] px-4 py-3 rounded-2xl text-sm shadow-md ${msg.senderType === 'AGENT'
-                                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-br-none'
-                                    : 'bg-white text-slate-700 border border-slate-200/80 rounded-bl-none'
-                                    }`}>
-                                    <div className="pr-8"> {/* Espacio para el icono y la hora */}
-                                        {msg.messageText}
-                                    </div>
-                                    {/* --- INICIO: Iconos de estado del mensaje (Mockup) --- */}
-                                    {msg.senderType === 'AGENT' && (
-                                        <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1">
-                                            {(() => {
-                                                switch (msg.status) {
-                                                    case 'read':
-                                                        return <CheckCheck size={16} className="text-sky-300" />;
-                                                    case 'delivered':
-                                                        return <CheckCheck size={16} className="text-white/70" />;
-                                                    case 'sent':
-                                                        return <Check size={16} className="text-white/70" />;
-                                                    default:
-                                                        // Estado por defecto o mientras se envía (antes de tener 'sent')
-                                                        return <Check size={16} className="text-white/40" />;
-                                                }
-                                            })()}
+                        {isLoadingChat ? (
+                            <MessageSkeleton />
+                        ) : (
+                            messages.map((msg, index) => (
+                                <div
+                                    key={msg.id}
+                                    className={`flex ${msg.senderType === 'AGENT' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                    <div className={`relative max-w-[70%] px-4 py-3 rounded-2xl text-sm shadow-md ${msg.senderType === 'AGENT'
+                                        ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white rounded-br-none'
+                                        : 'bg-white text-slate-700 border border-slate-200/80 rounded-bl-none'
+                                        }`}>
+                                        <div className="pr-8"> {/* Espacio para el icono y la hora */}
+                                            {msg.messageText}
                                         </div>
-                                    )}
-                                    {/* --- FIN: Iconos de estado del mensaje --- */}
+                                        {/* --- INICIO: Iconos de estado del mensaje (Mockup) --- */}
+                                        {msg.senderType === 'AGENT' && (
+                                            <div className="absolute bottom-1.5 right-2.5 flex items-center gap-1">
+                                                {(() => {
+                                                    switch (msg.status) {
+                                                        case 'read':
+                                                            return <CheckCheck size={16} className="text-sky-300" />;
+                                                        case 'delivered':
+                                                            return <CheckCheck size={16} className="text-white/70" />;
+                                                        case 'sent':
+                                                            return <Check size={16} className="text-white/70" />;
+                                                        default:
+                                                            // Estado por defecto o mientras se envía (antes de tener 'sent')
+                                                            return <Check size={16} className="text-white/40" />;
+                                                    }
+                                                })()}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
+                        
                     </div>
 
                     {/* Input */}

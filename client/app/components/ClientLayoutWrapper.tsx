@@ -39,11 +39,11 @@ export default function ClientLayoutWrapper({ children, user, initialTeam }: { c
       {/* Renderizado condicional del Navegador */}
       {isMobile ? (
         <div className="row-start-3 col-start-1 z-20">
-          <MobileBottomNav />
+          <MobileBottomNav user={user} />
         </div>
       ) : (
         <div className="row-span-2 col-start-1 bg-slate-900 z-20">
-          <Navbar />
+          <Navbar user={user} />
         </div>
       )}
 
