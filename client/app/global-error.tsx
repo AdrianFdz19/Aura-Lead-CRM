@@ -10,13 +10,14 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html>
+    <html lang="en">
       <body>
-        <div style={{ padding: '2rem', fontFamily: 'sans-serif', textAlign: 'center' }}>
-          <h2>Algo salió mal</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
+          <h2>Algo salió mal en el servidor</h2>
+          <p>{error?.message || 'Error inesperado'}</p>
           <button
             onClick={() => reset()}
-            style={{ padding: '0.5rem 1rem', marginTop: '1rem', cursor: 'pointer' }}
+            style={{ padding: '10px 20px', marginTop: '20px', cursor: 'pointer', background: '#000', color: '#fff', border: 'none', borderRadius: '5px' }}
           >
             Intentar de nuevo
           </button>
