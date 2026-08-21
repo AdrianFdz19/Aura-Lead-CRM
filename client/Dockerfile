@@ -42,14 +42,13 @@ ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_PUSHER_KEY=$NEXT_PUBLIC_PUSHER_KEY
 ENV NEXT_PUBLIC_PUSHER_CLUSTER=$NEXT_PUBLIC_PUSHER_CLUSTER
 ENV NEXT_PUBLIC_DEMO_TENANT_ID=$NEXT_PUBLIC_DEMO_TENANT_ID
+ENV DATABASE_URL=$DATABASE_URL
 
 COPY package.json package-lock.json ./ 
 
 RUN npm ci 
 
 COPY . . 
-
-ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 
 # 3. ¡Generamos el cliente de Prisma aquí antes de construir la app!
 RUN npx prisma generate
