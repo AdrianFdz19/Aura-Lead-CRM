@@ -1,11 +1,12 @@
 import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
-const KEY_HEX = process.env.ENCRYPTION_KEY;
+const KEY_HEX = process.env.ENCRYPTION_KEY || "";
 
 // Validamos la existencia de la llave en el entorno de servidor
-if (!KEY_HEX) {
-  throw new Error('ENCRYPTION_KEY environment variable is missing in server configuration.');
+
+if (!KEY_HEX && process.env.NODE_ENV === 'production') {
+  throw new Error('ENCRYPTION_KEY is missing');
 }
 
 // Convertimos la llave hexadecimal a un buffer de 32 bytes (256 bits)
