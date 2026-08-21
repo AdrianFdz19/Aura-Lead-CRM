@@ -12,3 +12,5 @@ terraform.tfstate.backup
 
 # Environment variables
 .env
+.env.*
+!.env.example

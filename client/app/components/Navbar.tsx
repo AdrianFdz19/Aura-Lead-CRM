@@ -29,7 +29,7 @@ export default function Navbar({ user }: { user: { role: string } | null }) {
             {/* LOGO FIJO ARRIBA */}
             <div className="h-16 flex items-center px-6 border-b border-gray-50">
                 <span className="text-xl font-bold text-blue-600 truncate">
-                    {isExpanded ? "MyCRM" : "M"}
+                    {isExpanded ? "AuraLead CRM" : "AuraLead"}
                 </span>
             </div>
 
