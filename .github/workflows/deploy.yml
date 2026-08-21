@@ -30,7 +30,7 @@ jobs:
           ECR_REPOSITORY: 031949581603.dkr.ecr.us-east-1.amazonaws.com/crm-client # <--- CAMBIA ESTO
           IMAGE_TAG: latest
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -f client/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG client/
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update ECS Service
