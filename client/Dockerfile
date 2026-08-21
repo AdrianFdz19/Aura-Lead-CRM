@@ -23,6 +23,9 @@ RUN npm ci
 
 COPY . . 
 
+# 3. ¡Generamos el cliente de Prisma aquí antes de construir la app!
+RUN npx prisma generate
+
 RUN npm run build 
 
 # Etapa 2 .- Runner 

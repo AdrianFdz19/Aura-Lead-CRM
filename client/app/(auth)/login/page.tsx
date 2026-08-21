@@ -40,7 +40,7 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-slate-50 p-6">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-800">Sign In CAMBIO!</h2>
+          <h2 className="text-2xl font-bold text-slate-800">Sign In test dockerfile change</h2>
           <p className="text-sm text-slate-500 mt-1">Enter your credentials to access the system.</p>
         </div>
 
