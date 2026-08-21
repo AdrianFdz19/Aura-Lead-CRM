@@ -15,7 +15,6 @@ ARG NODE_ENV
 ARG DEMO_TENANT_ID
 ARG JWT_SECRET
 ARG DATABASE_URL
-ENV DATABASE_URL=$DATABASE_URL
 ARG WHATSAPP_VERIFY_TOKEN 
 ARG ENCRYPTION_KEY 
 ARG STRIPE_SECRET_KEY
@@ -49,6 +48,8 @@ COPY package.json package-lock.json ./
 RUN npm ci 
 
 COPY . . 
+
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
 
 # 3. ¡Generamos el cliente de Prisma aquí antes de construir la app!
 RUN npx prisma generate
