@@ -30,7 +30,34 @@ jobs:
           ECR_REPOSITORY: 031949581603.dkr.ecr.us-east-1.amazonaws.com/crm-client # <--- CAMBIA ESTO
           IMAGE_TAG: latest
         run: |
-          docker build -f client/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG client/
+          docker build \
+          --build-arg AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+          --build-arg AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+          --build-arg DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+          --build-arg ENCRYPTION_KEY="${{ secrets.ENCRYPTION_KEY }}" \
+          --build-arg JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+          --build-arg NEXT_PUBLIC_PUSHER_CLUSTER="${{ secrets.NEXT_PUBLIC_PUSHER_CLUSTER }}" \
+          --build-arg NEXT_PUBLIC_PUSHER_KEY="${{ secrets.NEXT_PUBLIC_PUSHER_KEY }}" \
+          --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}" \
+          --build-arg PUSHER_APP_ID="${{ secrets.PUSHER_APP_ID }}" \
+          --build-arg PUSHER_CLUSTER="${{ secrets.PUSHER_CLUSTER }}" \
+          --build-arg PUSHER_KEY="${{ secrets.PUSHER_KEY }}" \
+          --build-arg PUSHER_SECRET="${{ secrets.PUSHER_SECRET }}" \
+          --build-arg RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
+          --build-arg STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+          --build-arg STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+          --build-arg WHATSAPP_VERIFY_TOKEN="${{ secrets.WHATSAPP_VERIFY_TOKEN }}" \
+
+          --build-arg AWS_BUCKET_NAME="${{ vars.AWS_BUCKET_NAME }}" \
+          --build-arg AWS_REGION="${{ vars.AWS_REGION }}" \
+          --build-arg DEMO_TENANT_ID="${{ vars.DEMO_TENANT_ID }}" \
+          --build-arg EMAIL="${{ vars.EMAIL }}" \
+          --build-arg NEXT_PUBLIC_DEMO_TENANT_ID="${{ vars.NEXT_PUBLIC_DEMO_TENANT_ID }}" \
+          --build-arg NEXT_PUBLIC_URL="${{ vars.NEXT_PUBLIC_URL }}" \
+          --build-arg NODE_ENV="${{ vars.NODE_ENV }}" 
+          
+          -f client/Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG client/
+
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update ECS Service

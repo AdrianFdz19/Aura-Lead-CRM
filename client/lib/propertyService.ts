@@ -2,6 +2,7 @@
 
 import prisma from './prisma'
 import { generateEmbedding } from './ai'; // La función que creamos antes
+import { dataTagErrorSymbol } from '@tanstack/react-query';
 
 export const getPropertiesByTenant = async (tenantId: string) => {
   return await prisma.property.findMany({
@@ -25,7 +26,7 @@ export const propertyService = {
   }) {
     // 1. Generamos el vector antes de guardar
     const embedding = await generateEmbedding(
-      `${data.title} - ${data.description} - ${data.location}`
+      `${data.title} - ${data.description} - ${data.location}`, data.tenantId
     );
 
     // 2. Guardamos en la base de datos
@@ -52,7 +53,7 @@ export const propertyService = {
   // Search Property Function
   async searchProperties(tenantId: string, queryText: string) {
     // 1. Generamos el embedding de la pregunta del usuario
-    const queryEmbedding = await generateEmbedding(queryText);
+    const queryEmbedding = await generateEmbedding(queryText, tenantId);
 
     // 2. Convertimos el array a string para que Postgres lo entienda
     const vectorQuery = `[${queryEmbedding.join(',')}]`;

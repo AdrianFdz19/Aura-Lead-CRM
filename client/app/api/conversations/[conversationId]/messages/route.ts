@@ -109,8 +109,8 @@ export async function POST(
         const phoneId = config.phoneNumberId;
 
         // 3. Enviar a WhatsApp API
-        const apiUrl = process.env.WHATSAPP_API_URL || 'https://graph.facebook.com';
-        const apiVersion = process.env.WHATSAPP_API_VERSION || 'v20.0';
+        const apiUrl ='https://graph.facebook.com';
+        const apiVersion = 'v25.0';
 
         const response = await fetch(`${apiUrl}/${apiVersion}/${phoneId}/messages`, {
             method: 'POST',

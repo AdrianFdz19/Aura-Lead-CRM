@@ -4,8 +4,6 @@ import { getSession } from "@/lib/auth";
 import { propertyService } from "@/lib/propertyService";
 import { NextResponse } from "next/server";
 
-const openAiModel = process.env.OPENAI_MODEL as string;
-
 export async function POST(req: Request) {
     // 1. Obtener la sesión de forma segura
     const session = await getSession();
@@ -22,7 +20,7 @@ export async function POST(req: Request) {
     try {
         const { message, history } = await req.json();
         const tenantId = session.tenantId;
-        const MAX_HISTORY: string = process.env.OPENAI_CHAT_MAX_HISTORY as string;
+        const MAX_HISTORY: string = "10" as string;
 
         // 1. Buscamos propiedades relevantes para el mensaje
         const properties: any = await propertyService.searchProperties(tenantId, message);
