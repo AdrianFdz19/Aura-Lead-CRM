@@ -59,8 +59,6 @@ RUN npm run build
 FROM node:22-alpine AS runner 
 WORKDIR /app 
 
-ENV NODE_ENV=development
-
 # Creamos un usuario sin privilegios root por seguridad (opcional pero recomendado)
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
