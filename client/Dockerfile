@@ -1,6 +1,6 @@
 # Etapa 1 .- Builder
 
-FROM node:22-bookworm-slim AS builder 
+FROM node:22-alpine AS builder 
 WORKDIR /app
 
 # 1. Variables públicas del cliente (NEXT_PUBLIC_)
@@ -49,8 +49,6 @@ RUN npm ci
 
 COPY . . 
 
-RUN apt-get update -y && apt-get install -y openssl ca-certificates
-
 # 3. ¡Generamos el cliente de Prisma aquí antes de construir la app!
 RUN npx prisma generate
 
@@ -58,7 +56,7 @@ RUN npm run build
 
 # Etapa 2 .- Runner 
 
-FROM node:22-bookworm-slim AS runner 
+FROM node:22-alpine AS runner 
 WORKDIR /app 
 
 ENV NODE_ENV=development
