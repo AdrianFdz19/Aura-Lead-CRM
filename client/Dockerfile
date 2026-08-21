@@ -49,6 +49,8 @@ RUN npm ci
 
 COPY . . 
 
+RUN apt-get update -y && apt-get install -y openssl ca-certificates
+
 # 3. ¡Generamos el cliente de Prisma aquí antes de construir la app!
 RUN npx prisma generate
 
