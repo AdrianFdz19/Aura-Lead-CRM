@@ -61,6 +61,11 @@ flowchart TD
     Pusher -->|Live Updates| Browser 
 ```
 
+## Detailed Architecture
+For a deep dive into our network segmentation, including VPC routing and security groups, see the diagram below:
+
+![Diagrama de Arquitectura](./docs/aura-lead-diagram.drawio.svg)
+
 ## Getting Started & Deployment
 
 ### Prerequisites
