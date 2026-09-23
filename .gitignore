@@ -1,9 +1,8 @@
 aws/
-terraform/
-.terraform/
 terraform.tfstate
 terraform.tfstate.backup
 *.tfvars
+/terraform/production
 
 # Generic credentials
 *.pem
