@@ -1,4 +1,4 @@
-name: Infrastructure Up (Apply)
+name: Infrastructure Up (Apply) v2
 
 on:
   schedule:
