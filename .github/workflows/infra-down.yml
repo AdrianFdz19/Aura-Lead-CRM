@@ -27,7 +27,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Terraform Init
-        working-directory: ./terraform/development
+        working-directory: terraform/development
         run: terraform init
 
       - name: Terraform Destroy
