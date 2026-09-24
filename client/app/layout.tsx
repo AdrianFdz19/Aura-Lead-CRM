@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aura Lead CRM | Real Estate Lead Management",
+  title: "Aura Lead CRM | Real Estate Lead Management Dev",
   description: "Production-ready multi-tenant CRM designed for real estate agents with real-time WhatsApp integration and automated workflows.",
   keywords: ["CRM", "Real Estate", "Next.js", "WhatsApp API", "Full Stack"],
   authors: [{ name: "Adrian Fdz" }],
