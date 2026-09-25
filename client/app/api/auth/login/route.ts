@@ -26,8 +26,8 @@ export async function POST(req: Request) {
 
     // Generamos el token con el estado actual de la suscripción
     const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-    const token = await new SignJWT({ 
-      userId: user.id, 
+    const token = await new SignJWT({
+      userId: user.id,
       tenantId: user.tenantId,
       role: user.role,
       status: user.tenant.subscription?.status || 'pending_payment'
@@ -39,13 +39,14 @@ export async function POST(req: Request) {
 
     (await cookies()).set('session', token, {
       httpOnly: true,
-      secure: false, // Cambiar esto para cuando este en producción
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
     });
 
     return NextResponse.json({ message: 'Login successful' }, { status: 200 });
   } catch (error) {
+    console.error('[LOGIN_ERROR]', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
