@@ -15,7 +15,7 @@ export default function PricingPage() {
             name: "Professional",
             slug: "professional",
             price: "$79",
-            description: "For growing teams.",
+            description: "For growing teams v2.",
             features: ["Unlimited leads", "WhatsApp Business API", "Advanced dashboard", "Priority support"],
             highlight: true,
         },
