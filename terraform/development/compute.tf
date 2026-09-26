@@ -13,7 +13,7 @@ resource "aws_ecs_task_definition" "app" {
 
   execution_role_arn = aws_iam_role.ecs_execution_role.arn
 
-  # Definicion de como se ejecuta el contenedor
+  # Definición de cómo se ejecuta el contenedor
   container_definitions = jsonencode([
     {
       name      = "nextjs-app"
@@ -26,10 +26,26 @@ resource "aws_ecs_task_definition" "app" {
         }
       ]
 
-      # INYECTAMOS LAS VARIABLES DE ENTORNO AQUÍ:
+      # SOLO VALORES ESTÁTICOS EN TEXTO PLANO (value):
       environment = [
-        // App
-        { name = "NODE_ENV", value = "production" },
+        { name = "NODE_ENV", value = "development" },
+        { name = "NEXT_PUBLIC_URL", value = "/" }
+      ],
+
+      # TODO LO QUE VIENE DE PARAMETER STORE USANDO ARNs (valueFrom):
+      secrets = [
+        # Secretos Base
+        { name = "DATABASE_URL", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/DATABASE_URL" },
+        { name = "JWT_SECRET", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/JWT_SECRET" },
+        { name = "OPENAI_API_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/OPENAI_API_KEY" },
+        { name = "RESEND_API_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/RESEND_API_KEY" },
+        { name = "AWS_ACCESS_KEY_ID", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/AWS_ACCESS_KEY_ID" },
+        { name = "AWS_SECRET_ACCESS_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/AWS_SECRET_ACCESS_KEY" },
+        { name = "PUSHER_SECRET", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/PUSHER_SECRET" },
+        { name = "STRIPE_WEBHOOK_SECRET", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/STRIPE_WEBHOOK_SECRET" },
+        { name = "STRIPE_SECRET_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/STRIPE_SECRET_KEY" },
+        
+        # Variables traídas desde SSM Parameter Store
         { name = "PUSHER_APP_ID", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/PUSHER_APP_ID" },
         { name = "PUSHER_CLUSTER", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/PUSHER_CLUSTER" },
         { name = "PUSHER_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/PUSHER_KEY" },
@@ -42,21 +58,8 @@ resource "aws_ecs_task_definition" "app" {
         { name = "ENCRYPTION_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/ENCRYPTION_KEY" },
         { name = "EMAIL", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/EMAIL" },
         { name = "DEMO_TENANT_ID", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/DEMO_TENANT_ID" },
-        { name = "NEXT_PUBLIC_DEMO_TENANT_ID", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/NEXT_PUBLIC_DEMO_TENANT_ID" },
-        { name = "NEXT_PUBLIC_URL", value = "/" }
+        { name = "NEXT_PUBLIC_DEMO_TENANT_ID", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/NEXT_PUBLIC_DEMO_TENANT_ID" }
       ],
-
-      secrets = [
-        { name = "DATABASE_URL", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/DATABASE_URL" },
-        { name = "JWT_SECRET", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/JWT_SECRET" },
-        { name = "OPENAI_API_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/OPENAI_API_KEY" },
-        { name = "RESEND_API_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/RESEND_API_KEY" },
-        { name = "AWS_ACCESS_KEY_ID", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/AWS_ACCESS_KEY_ID" },
-        { name = "AWS_SECRET_ACCESS_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/AWS_SECRET_ACCESS_KEY" },
-        { name = "PUSHER_SECRET", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/PUSHER_SECRET" },
-        { name = "STRIPE_WEBHOOK_SECRET", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/STRIPE_WEBHOOK_SECRET" },
-        { name = "STRIPE_SECRET_KEY", valueFrom = "arn:aws:ssm:us-east-1:031949581603:parameter/crm/dev/STRIPE_SECRET_KEY" }
-      ]
 
       logConfiguration = {
         logDriver = "awslogs"
